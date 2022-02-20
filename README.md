@@ -7,6 +7,14 @@ See the [ceres library] for more information.
 
 [ceres library]: http://ceres-solver.org/automatic_derivatives.html#dual-numbers-jets
 
+## Nightly rust
+
+This crate uses the nightly feature `generic_associated_types`. Hence it's necessary to use
+the nightly rust compiler. Hopefully this won't be necessary anymore in the near future,
+see [The push for GATs stabilization].
+
+[The push for GATs stabilization]: https://blog.rust-lang.org/2021/08/03/GATs-stabilization-push.html
+
 ## Feature flags
 
 These feature flags can be used to customize the crate.

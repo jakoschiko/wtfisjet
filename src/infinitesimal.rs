@@ -17,10 +17,16 @@ use crate::Number;
 /// [`Jet`]: crate::Jet
 pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// Return type of [`Infinitesimal::dense_elems`].
-    type DenseIterator: Iterator<Item = N>;
+    type DenseElems<'a>: Iterator<Item = &'a N>
+    where
+        Self: 'a,
+        N: 'a;
 
     /// Return type of [`Infinitesimal::sparse_elems`].
-    type SparseIterator: Iterator<Item = (usize, N)>;
+    type SparseElems<'a>: Iterator<Item = (usize, &'a N)>
+    where
+        Self: 'a,
+        N: 'a;
 
     /// Returns the dimension count of the infinitesimal part.
     fn dim(&self) -> usize;
@@ -55,7 +61,7 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// # Panic
     ///
     /// This function panics if the implementation does no support the dimension count.
-    fn from_dense<I: Iterator<Item = N>>(elems: I) -> Self;
+    fn from_dense<I: Iterator<Item = N>>(dense_elems: I) -> Self;
 
     /// Returns an instance that contains the elements emitted by the given iterator
     /// and zero for all other dimensions.
@@ -70,7 +76,7 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// - the iterator emits an element with an index equal to or greater than the
     /// dimension count or
     /// - the implementation does no support the dimension count.
-    fn from_sparse<I: Iterator<Item = (usize, N)>>(elems: I, dim: usize) -> Self;
+    fn from_sparse<I: Iterator<Item = (usize, N)>>(sparse_elems: I, dim: usize) -> Self;
 
     /// Returns whether the implementation uses a sparse representation that omits the zero
     /// elements.
@@ -80,19 +86,19 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     fn is_sparse() -> bool;
 
     /// Returns the elements of the infinitesimal part for all dimensions.
-    fn dense_elems(&self) -> Self::DenseIterator;
+    fn dense_elems(&self) -> Self::DenseElems<'_>;
 
     /// Returns the non-zero elements of the infinitesimal part along with their dimensions.
     ///
     /// Each dimension must be emitted at most once. The order is undefined.
-    fn sparse_elems(&self) -> Self::DenseIterator;
+    fn sparse_elems(&self) -> Self::SparseElems<'_>;
 
     /// Returns the element for the given dimension.
     ///
     /// # Panic
     ///
     /// This function panics if the given index is equal to or greater than the dimension count.
-    fn elem(&self, idx: usize) -> N;
+    fn elem(&self, idx: usize) -> &N;
 
     /// Adds both infinitesimal parts element wise.
     ///
@@ -130,9 +136,15 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
 pub struct NoInfinitesimal;
 
 impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
-    type DenseIterator = NoInfinitesimalDenseIterator<N>;
+    type DenseElems<'a>
+    where
+        N: 'a,
+    = NoInfinitesimalDenseElems<'a, N>;
 
-    type SparseIterator = NoInfinitesimalSparseIterator<N>;
+    type SparseElems<'a>
+    where
+        N: 'a,
+    = NoInfinitesimalSparseElems<'a, N>;
 
     fn dim(&self) -> usize {
         0
@@ -154,8 +166,8 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
         }
     }
 
-    fn from_dense<I: Iterator<Item = N>>(elems: I) -> Self {
-        let dim = elems.count();
+    fn from_dense<I: Iterator<Item = N>>(dense_elems: I) -> Self {
+        let dim = dense_elems.count();
         if dim == 0 {
             NoInfinitesimal
         } else {
@@ -163,9 +175,9 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
         }
     }
 
-    fn from_sparse<I: Iterator<Item = (usize, N)>>(mut elems: I, dim: usize) -> Self {
+    fn from_sparse<I: Iterator<Item = (usize, N)>>(mut sparse_elems: I, dim: usize) -> Self {
         if dim == 0 {
-            if let Some((idx, _)) = elems.next() {
+            if let Some((idx, _)) = sparse_elems.next() {
                 panic!("NoInfinitesimal doesn't support dimension with index {idx}")
             } else {
                 NoInfinitesimal
@@ -179,15 +191,15 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
         false
     }
 
-    fn dense_elems(&self) -> Self::DenseIterator {
-        NoInfinitesimalDenseIterator { _n: PhantomData }
+    fn dense_elems(&self) -> Self::DenseElems<'_> {
+        NoInfinitesimalDenseElems { _n: PhantomData }
     }
 
-    fn sparse_elems(&self) -> Self::DenseIterator {
-        NoInfinitesimalDenseIterator { _n: PhantomData }
+    fn sparse_elems(&self) -> Self::SparseElems<'_> {
+        NoInfinitesimalSparseElems { _n: PhantomData }
     }
 
-    fn elem(&self, idx: usize) -> N {
+    fn elem(&self, idx: usize) -> &N {
         panic!("NoInfinitesimal doesn't support dimension with index {idx}")
     }
 
@@ -208,24 +220,24 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
     }
 }
 
-pub struct NoInfinitesimalDenseIterator<N: Number> {
-    _n: PhantomData<N>,
+pub struct NoInfinitesimalDenseElems<'a, N: 'a + Number> {
+    _n: PhantomData<&'a N>,
 }
 
-impl<N: Number> Iterator for NoInfinitesimalDenseIterator<N> {
-    type Item = N;
+impl<'a, N: 'a + Number> Iterator for NoInfinitesimalDenseElems<'a, N> {
+    type Item = &'a N;
 
     fn next(&mut self) -> Option<Self::Item> {
         None
     }
 }
 
-pub struct NoInfinitesimalSparseIterator<N: Number> {
-    _n: PhantomData<N>,
+pub struct NoInfinitesimalSparseElems<'a, N: 'a + Number> {
+    _n: PhantomData<&'a N>,
 }
 
-impl<N: Number> Iterator for NoInfinitesimalSparseIterator<N> {
-    type Item = (usize, N);
+impl<'a, N: Number> Iterator for NoInfinitesimalSparseElems<'a, N> {
+    type Item = (usize, &'a N);
 
     fn next(&mut self) -> Option<Self::Item> {
         None
