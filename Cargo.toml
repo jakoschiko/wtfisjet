@@ -9,5 +9,9 @@ edition = "2021"
 num-traits = "0.2.14"
 num-rational = { version = "0.4.0", optional = true }
 
+[dev-dependencies]
+num-rational = "0.4.0"
+
 [features]
-default = ["num-rational"]
+default = []
+big-rational = ["num-rational"]

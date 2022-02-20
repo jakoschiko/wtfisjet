@@ -7,6 +7,16 @@ See the [ceres library] for more information.
 
 [ceres library]: http://ceres-solver.org/automatic_derivatives.html#dual-numbers-jets
 
+## Feature flags
+
+These feature flags can be used to customize the crate.
+
+### `big-rational` (disabled by default)
+
+If enabled, the type `num-rational::BigRational` will implement [`Number`].
+This is very useful for writing tests with arbitrary precision. It will
+require the dependency `num-rational`.
+
 ## License
 
 Licensed under either of
