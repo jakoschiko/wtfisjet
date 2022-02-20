@@ -81,3 +81,70 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// Scales all elements of the infinitesimal part with the given factor.
     fn scale(self, factor: N) -> Self;
 }
+
+/// Implementation for [`Infinitesimal`] with zero dimensions.
+///
+/// Useful if you want to use a jet based function but you are not interested
+/// in the derivatives. Because it's a zero size type with only no-ops, all
+/// overhead caused the infinitesimal part of the jet will be eliminated by
+/// the compiler.
+#[derive(Debug, Clone, PartialEq)]
+pub struct NoInfinitesimal;
+
+impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
+    type DenseIterator = std::iter::Empty<N>;
+
+    type SparseIterator = std::iter::Empty<(usize, N)>;
+
+    fn dim(&self) -> usize {
+        0
+    }
+
+    fn one(idx: usize, dim: usize) -> Self {
+        if dim == 0 {
+            panic!("NoInfinitesimal doesn't support dimension with index {idx}")
+        } else {
+            panic!("NoInfinitesimal doesn't support dimension count {dim}")
+        }
+    }
+
+    fn zeros(dim: usize) -> Self {
+        if dim == 0 {
+            NoInfinitesimal
+        } else {
+            panic!("NoInfinitesimal doesn't support dimension count {dim}")
+        }
+    }
+
+    fn is_sparse() -> bool {
+        false
+    }
+
+    fn dense_elems(&self) -> Self::DenseIterator {
+        std::iter::empty()
+    }
+
+    fn sparse_elems(&self) -> Self::DenseIterator {
+        std::iter::empty()
+    }
+
+    fn elem(&self, idx: usize) -> N {
+        panic!("NoInfinitesimal doesn't support dimension with index {idx}")
+    }
+
+    fn add(self, _lhs: Self) -> Self {
+        NoInfinitesimal
+    }
+
+    fn sub(self, _lhs: Self) -> Self {
+        NoInfinitesimal
+    }
+
+    fn neg(self) -> Self {
+        NoInfinitesimal
+    }
+
+    fn scale(self, _factor: N) -> Self {
+        NoInfinitesimal
+    }
+}
