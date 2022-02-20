@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use crate::Number;
 
 /// The n-dimensional infinitesimal part of a [`Jet`] that represents the derivatives.
@@ -128,9 +130,9 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
 pub struct NoInfinitesimal;
 
 impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
-    type DenseIterator = std::iter::Empty<N>;
+    type DenseIterator = NoInfinitesimalDenseIterator<N>;
 
-    type SparseIterator = std::iter::Empty<(usize, N)>;
+    type SparseIterator = NoInfinitesimalSparseIterator<N>;
 
     fn dim(&self) -> usize {
         0
@@ -178,11 +180,11 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
     }
 
     fn dense_elems(&self) -> Self::DenseIterator {
-        std::iter::empty()
+        NoInfinitesimalDenseIterator { _n: PhantomData }
     }
 
     fn sparse_elems(&self) -> Self::DenseIterator {
-        std::iter::empty()
+        NoInfinitesimalDenseIterator { _n: PhantomData }
     }
 
     fn elem(&self, idx: usize) -> N {
@@ -203,5 +205,29 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
 
     fn scale(self, _factor: N) -> Self {
         NoInfinitesimal
+    }
+}
+
+pub struct NoInfinitesimalDenseIterator<N: Number> {
+    _n: PhantomData<N>,
+}
+
+impl<N: Number> Iterator for NoInfinitesimalDenseIterator<N> {
+    type Item = N;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        None
+    }
+}
+
+pub struct NoInfinitesimalSparseIterator<N: Number> {
+    _n: PhantomData<N>,
+}
+
+impl<N: Number> Iterator for NoInfinitesimalSparseIterator<N> {
+    type Item = (usize, N);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        None
     }
 }
