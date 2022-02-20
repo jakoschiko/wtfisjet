@@ -59,7 +59,7 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// # Panic
     ///
     /// This function panics if the given index is equal to or greater than the dimension count.
-    fn elem(&self) -> N;
+    fn elem(&self, idx: usize) -> N;
 
     /// Adds both infinitesimal parts element wise.
     ///
