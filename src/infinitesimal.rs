@@ -30,14 +30,45 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     ///
     /// # Panic
     ///
-    /// This function panics if the given index is equal to or greater than the dimension count.
+    /// This function panics if
+    /// - the given index is equal to or greater than the dimension count or
+    /// - the implementation does not support the dimension count.
     fn one(idx: usize, dim: usize) -> Self;
 
     /// Returns an instance with zero for all dimensions.
     ///
     /// If want to create a constant jet without dependencies to any variables, we can use this
     /// function to initialize its infinitesimal part.
+    ///
+    /// # Panic
+    ///
+    /// This function panics if the implementation does no support the dimension count.
     fn zeros(dim: usize) -> Self;
+
+    /// Returns an instance that contains the elements emitted by the given iterator.
+    ///
+    /// The number of elements emitted by the iterator is the dimension count of the
+    /// returned instance.
+    ///
+    /// # Panic
+    ///
+    /// This function panics if the implementation does no support the dimension count.
+    fn from_dense<I: Iterator<Item = N>>(elems: I) -> Self;
+
+    /// Returns an instance that contains the elements emitted by the given iterator
+    /// and zero for all other dimensions.
+    ///
+    /// Each element is emitted along with its dimension index. The indices are allowed
+    /// to be emitted in arbitrary order. If an index is emitted multiple times, the last
+    /// element will be used.
+    ///
+    /// # Panic
+    ///
+    /// This function panics if
+    /// - the iterator emits an element with an index equal to or greater than the
+    /// dimension count or
+    /// - the implementation does no support the dimension count.
+    fn from_sparse<I: Iterator<Item = (usize, N)>>(elems: I, dim: usize) -> Self;
 
     /// Returns whether the implementation uses a sparse representation that omits the zero
     /// elements.
@@ -88,6 +119,11 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
 /// in the derivatives. Because it's a zero size type with only no-ops, all
 /// overhead caused the infinitesimal part of the jet will be eliminated by
 /// the compiler.
+///
+/// # Supported dimension count
+///
+/// This implementation supports only the dimension count zero. All attempts to
+/// create an instance with greater dimension count will cause panic.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NoInfinitesimal;
 
@@ -111,6 +147,27 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
     fn zeros(dim: usize) -> Self {
         if dim == 0 {
             NoInfinitesimal
+        } else {
+            panic!("NoInfinitesimal doesn't support dimension count {dim}")
+        }
+    }
+
+    fn from_dense<I: Iterator<Item = N>>(elems: I) -> Self {
+        let dim = elems.count();
+        if dim == 0 {
+            NoInfinitesimal
+        } else {
+            panic!("NoInfinitesimal doesn't support dimension count {dim}")
+        }
+    }
+
+    fn from_sparse<I: Iterator<Item = (usize, N)>>(mut elems: I, dim: usize) -> Self {
+        if dim == 0 {
+            if let Some((idx, _)) = elems.next() {
+                panic!("NoInfinitesimal doesn't support dimension with index {idx}")
+            } else {
+                NoInfinitesimal
+            }
         } else {
             panic!("NoInfinitesimal doesn't support dimension count {dim}")
         }
