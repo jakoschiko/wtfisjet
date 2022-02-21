@@ -29,7 +29,7 @@ mod number;
 pub use number::Number;
 
 mod infinitesimal;
-pub use infinitesimal::{Infinitesimal, NoInfinitesimal};
+pub use infinitesimal::{DenseInfinitesimal, Infinitesimal, NoInfinitesimal};
 
 mod jet;
 pub use jet::Jet;
