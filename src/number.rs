@@ -18,5 +18,5 @@ impl Number for f32 {}
 
 impl Number for f64 {}
 
-#[cfg(any(test, feature = "big-rational"))]
+#[cfg(any(test, feature = "big-rational-number"))]
 impl Number for num_rational::BigRational {}

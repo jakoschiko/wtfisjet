@@ -19,7 +19,7 @@
 //!
 //! These feature flags can be used to customize the crate.
 //!
-//! ## `big-rational` (disabled by default)
+//! ## `big-rational-number` (disabled by default)
 //!
 //! If enabled, the type `num-rational::BigRational` will implement [`Number`].
 //! This is very useful for writing tests with arbitrary precision. It will

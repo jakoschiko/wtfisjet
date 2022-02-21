@@ -14,4 +14,4 @@ num-rational = "0.4.0"
 
 [features]
 default = []
-big-rational = ["num-rational"]
+big-rational-number = ["num-rational"]
