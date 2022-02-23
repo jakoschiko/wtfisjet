@@ -29,11 +29,18 @@
 //!
 //! If enabled, the type `SparseInfinitesimal` is available. It will
 //! require the dependency `intmap`.
+//!
+//! ## `const-infinitesimal` (disabled by default)
+//!
+//! If enabled, the type `ConstInfinitesimal` is available. It will
+//! require the dependency `array-init`.
 
 mod number;
 pub use number::Number;
 
 mod infinitesimal;
+#[cfg(any(test, feature = "const-infinitesimal"))]
+pub use infinitesimal::ConstInfinitesimal;
 #[cfg(any(test, feature = "sparse-infinitesimal"))]
 pub use infinitesimal::SparseInfinitesimal;
 pub use infinitesimal::{DenseInfinitesimal, Infinitesimal, NoInfinitesimal};

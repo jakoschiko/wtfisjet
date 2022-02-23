@@ -129,3 +129,8 @@ pub use dense_infinitesimal::DenseInfinitesimal;
 mod sparse_infinitesimal;
 #[cfg(any(test, feature = "sparse-infinitesimal"))]
 pub use sparse_infinitesimal::SparseInfinitesimal;
+
+#[cfg(any(test, feature = "const-infinitesimal"))]
+mod const_infinitesimal;
+#[cfg(any(test, feature = "const-infinitesimal"))]
+pub use const_infinitesimal::ConstInfinitesimal;

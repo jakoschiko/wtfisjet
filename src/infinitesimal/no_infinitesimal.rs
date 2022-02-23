@@ -11,7 +11,7 @@ use crate::{Infinitesimal, Number};
 ///
 /// # Supported dimension count
 ///
-/// This implementation supports only the dimension count zero. All attempts to
+/// This implementation supports only the dimension count zero. Any attempt to
 /// create an instance with greater dimension count will cause panic.
 #[derive(Debug, Clone, PartialEq)]
 pub struct NoInfinitesimal;

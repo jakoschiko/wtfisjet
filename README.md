@@ -30,6 +30,11 @@ require the dependency `num-rational`.
 If enabled, the type `SparseInfinitesimal` is available. It will
 require the dependency `intmap`.
 
+### `const-infinitesimal` (disabled by default)
+
+If enabled, the type `ConstInfinitesimal` is available. It will
+require the dependency `array-init`.
+
 ## License
 
 Licensed under either of
