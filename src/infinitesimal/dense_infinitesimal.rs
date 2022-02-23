@@ -49,10 +49,10 @@ impl<N: Number> Infinitesimal<N> for DenseInfinitesimal<N> {
         let mut result = Self::zeros(dim);
 
         for (idx, elem) in sparse_elems {
-            if idx >= dim {
-                panic!("Index {idx} must not be equal to or greater than dimension count {dim}")
+            if let Some(target) = result.elems.get_mut(idx) {
+                *target = elem
             } else {
-                result.elems[idx] = elem;
+                panic!("Index {idx} must not be equal to or greater than dimension count {dim}")
             }
         }
 
