@@ -31,17 +31,17 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
         0
     }
 
-    fn one(idx: usize, dim: usize) -> Self {
+    fn zeros(dim: usize) -> Self {
         if dim == 0 {
-            panic!("NoInfinitesimal doesn't support dimension with index {idx}")
+            NoInfinitesimal
         } else {
             panic!("NoInfinitesimal doesn't support dimension count {dim}")
         }
     }
 
-    fn zeros(dim: usize) -> Self {
+    fn one(idx: usize, dim: usize) -> Self {
         if dim == 0 {
-            NoInfinitesimal
+            panic!("NoInfinitesimal doesn't support dimension with index {idx}")
         } else {
             panic!("NoInfinitesimal doesn't support dimension count {dim}")
         }

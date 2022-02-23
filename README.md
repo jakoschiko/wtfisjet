@@ -25,6 +25,11 @@ If enabled, the type `num-rational::BigRational` will implement [`Number`].
 This is very useful for writing tests with arbitrary precision. It will
 require the dependency `num-rational`.
 
+### `sparse-infinitesimal` (disabled by default)
+
+If enabled, the type `SparseInfinitesimal` is available. It will
+require the dependency `intmap`.
+
 ## License
 
 Licensed under either of

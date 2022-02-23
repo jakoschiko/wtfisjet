@@ -24,11 +24,18 @@
 //! If enabled, the type `num-rational::BigRational` will implement [`Number`].
 //! This is very useful for writing tests with arbitrary precision. It will
 //! require the dependency `num-rational`.
+//!
+//! ## `sparse-infinitesimal` (disabled by default)
+//!
+//! If enabled, the type `SparseInfinitesimal` is available. It will
+//! require the dependency `intmap`.
 
 mod number;
 pub use number::Number;
 
 mod infinitesimal;
+#[cfg(any(test, feature = "sparse-infinitesimal"))]
+pub use infinitesimal::SparseInfinitesimal;
 pub use infinitesimal::{DenseInfinitesimal, Infinitesimal, NoInfinitesimal};
 
 mod jet;

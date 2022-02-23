@@ -29,6 +29,16 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// Returns the dimension count of the infinitesimal part.
     fn dim(&self) -> usize;
 
+    /// Returns an instance with zero for all dimensions.
+    ///
+    /// If want to create a constant jet without dependencies to any variables, we can use this
+    /// function to initialize its infinitesimal part.
+    ///
+    /// # Panic
+    ///
+    /// This function panics if the implementation does no support the dimension count.
+    fn zeros(dim: usize) -> Self;
+
     /// Return an instance with a one for the given dimension and zero for all other dimensions.
     ///
     /// If we want to differentiate with respect to a variable, we can use this function to
@@ -40,16 +50,6 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// - the given index is equal to or greater than the dimension count or
     /// - the implementation does not support the dimension count.
     fn one(idx: usize, dim: usize) -> Self;
-
-    /// Returns an instance with zero for all dimensions.
-    ///
-    /// If want to create a constant jet without dependencies to any variables, we can use this
-    /// function to initialize its infinitesimal part.
-    ///
-    /// # Panic
-    ///
-    /// This function panics if the implementation does no support the dimension count.
-    fn zeros(dim: usize) -> Self;
 
     /// Returns an instance that contains the elements emitted by the given iterator.
     ///
@@ -124,3 +124,8 @@ pub use no_infinitesimal::NoInfinitesimal;
 
 mod dense_infinitesimal;
 pub use dense_infinitesimal::DenseInfinitesimal;
+
+#[cfg(any(test, feature = "sparse-infinitesimal"))]
+mod sparse_infinitesimal;
+#[cfg(any(test, feature = "sparse-infinitesimal"))]
+pub use sparse_infinitesimal::SparseInfinitesimal;

@@ -25,6 +25,11 @@ impl<N: Number> Infinitesimal<N> for DenseInfinitesimal<N> {
         self.elems.len()
     }
 
+    fn zeros(dim: usize) -> Self {
+        let elems = std::iter::repeat_with(N::zero).take(dim).collect();
+        Self { elems }
+    }
+
     fn one(idx: usize, dim: usize) -> Self {
         if idx >= dim {
             panic!("Index {idx} must not be equal to or greater than dimension count {dim}")
@@ -33,11 +38,6 @@ impl<N: Number> Infinitesimal<N> for DenseInfinitesimal<N> {
             result.elems[idx] = N::one();
             result
         }
-    }
-
-    fn zeros(dim: usize) -> Self {
-        let elems = std::iter::repeat_with(N::zero).take(dim).collect();
-        Self { elems }
     }
 
     fn from_dense<I: Iterator<Item = N>>(dense_elems: I) -> Self {
