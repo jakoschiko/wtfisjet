@@ -40,12 +40,12 @@ impl<N: Number> Infinitesimal<N> for DenseInfinitesimal<N> {
         }
     }
 
-    fn from_dense<I: Iterator<Item = N>>(dense_elems: I) -> Self {
-        let elems = dense_elems.collect();
+    fn from_dense<E: IntoIterator<Item = N>>(dense_elems: E) -> Self {
+        let elems = dense_elems.into_iter().collect();
         Self { elems }
     }
 
-    fn from_sparse<I: Iterator<Item = (usize, N)>>(sparse_elems: I, dim: usize) -> Self {
+    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: usize) -> Self {
         let mut result = Self::zeros(dim);
 
         for (idx, elem) in sparse_elems {

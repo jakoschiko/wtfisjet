@@ -56,11 +56,12 @@ impl<N: Number> Infinitesimal<N> for SparseInfinitesimal<N> {
         }
     }
 
-    fn from_dense<I: Iterator<Item = N>>(dense_elems: I) -> Self {
-        let mut elems = IntMap::with_capacity(dense_elems.size_hint().0);
+    fn from_dense<E: IntoIterator<Item = N>>(dense_elems: E) -> Self {
+        let iter = dense_elems.into_iter();
+        let mut elems = IntMap::with_capacity(iter.size_hint().0);
         let mut dim: usize = 0;
 
-        for elem in dense_elems {
+        for elem in iter {
             if !elem.is_zero() {
                 // It doesn't matter that this could fail, we'll check `dim` later
                 let cast_idx = dim as u64;
@@ -81,7 +82,7 @@ impl<N: Number> Infinitesimal<N> for SparseInfinitesimal<N> {
         }
     }
 
-    fn from_sparse<I: Iterator<Item = (usize, N)>>(sparse_elems: I, dim: usize) -> Self {
+    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: usize) -> Self {
         let mut elems = IntMap::with_capacity(dim);
 
         let cast_dim = if let Ok(cast_dim) = dim.try_into() {

@@ -59,7 +59,7 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// # Panic
     ///
     /// This function panics if the implementation does no support the dimension count.
-    fn from_dense<I: Iterator<Item = N>>(dense_elems: I) -> Self;
+    fn from_dense<E: IntoIterator<Item = N>>(dense_elems: E) -> Self;
 
     /// Returns an instance that contains the elements emitted by the given iterator
     /// and zero for all other dimensions.
@@ -74,7 +74,7 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// - the iterator emits an element with an index equal to or greater than the
     /// dimension count or
     /// - the implementation does no support the dimension count.
-    fn from_sparse<I: Iterator<Item = (usize, N)>>(sparse_elems: I, dim: usize) -> Self;
+    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: usize) -> Self;
 
     /// Returns whether the implementation uses a sparse representation that omits the zero
     /// elements.

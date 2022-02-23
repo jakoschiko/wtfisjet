@@ -47,8 +47,8 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
         }
     }
 
-    fn from_dense<I: Iterator<Item = N>>(dense_elems: I) -> Self {
-        let dim = dense_elems.count();
+    fn from_dense<E: IntoIterator<Item = N>>(dense_elems: E) -> Self {
+        let dim = dense_elems.into_iter().count();
         if dim == 0 {
             NoInfinitesimal
         } else {
@@ -56,9 +56,9 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
         }
     }
 
-    fn from_sparse<I: Iterator<Item = (usize, N)>>(mut sparse_elems: I, dim: usize) -> Self {
+    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: usize) -> Self {
         if dim == 0 {
-            if let Some((idx, _)) = sparse_elems.next() {
+            if let Some((idx, _)) = sparse_elems.into_iter().next() {
                 panic!("NoInfinitesimal doesn't support dimension with index {idx}")
             } else {
                 NoInfinitesimal

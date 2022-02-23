@@ -54,7 +54,7 @@ impl<N: Number, const D: usize> Infinitesimal<N> for ConstInfinitesimal<N, D> {
         }
     }
 
-    fn from_dense<I: Iterator<Item = N>>(dense_elems: I) -> Self {
+    fn from_dense<E: IntoIterator<Item = N>>(dense_elems: E) -> Self {
         if let Some(elems) = array_init::from_iter(dense_elems) {
             Self { elems }
         } else {
@@ -62,7 +62,7 @@ impl<N: Number, const D: usize> Infinitesimal<N> for ConstInfinitesimal<N, D> {
         }
     }
 
-    fn from_sparse<I: Iterator<Item = (usize, N)>>(sparse_elems: I, dim: usize) -> Self {
+    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: usize) -> Self {
         if dim != D {
             panic!("ConstInfinitesimal<_, {D}> doesn't support dimension count {dim}")
         } else {
