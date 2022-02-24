@@ -27,13 +27,18 @@
 //!
 //! ## `sparse-infinitesimal` (disabled by default)
 //!
-//! If enabled, the type `SparseInfinitesimal` is available. It will
+//! If enabled, the type `wtfisjet::SparseInfinitesimal` is available. It will
 //! require the dependency `intmap`.
 //!
 //! ## `const-infinitesimal` (disabled by default)
 //!
-//! If enabled, the type `ConstInfinitesimal` is available. It will
+//! If enabled, the type `wtfisjet::ConstInfinitesimal` is available. It will
 //! require the dependency `array-init`.
+//!
+//! ## `dice` (disabled by default)
+//!
+//! If enabled, the module `wtfisjet::dice` is available. It provides generators for
+//! random test data. It will require the dependency `dicetest`.
 
 mod number;
 pub use number::Number;
@@ -47,3 +52,6 @@ pub use infinitesimal::{DenseInfinitesimal, Infinitesimal, NoInfinitesimal};
 
 mod jet;
 pub use jet::Jet;
+
+#[cfg(any(test, feature = "dice"))]
+pub mod dice;

@@ -27,13 +27,18 @@ require the dependency `num-rational`.
 
 ### `sparse-infinitesimal` (disabled by default)
 
-If enabled, the type `SparseInfinitesimal` is available. It will
+If enabled, the type `wtfisjet::SparseInfinitesimal` is available. It will
 require the dependency `intmap`.
 
 ### `const-infinitesimal` (disabled by default)
 
-If enabled, the type `ConstInfinitesimal` is available. It will
+If enabled, the type `wtfisjet::ConstInfinitesimal` is available. It will
 require the dependency `array-init`.
+
+### `dice` (disabled by default)
+
+If enabled, the module `wtfisjet::dice` is available. It provides generators for
+random test data. It will require the dependency `dicetest`.
 
 ## License
 
