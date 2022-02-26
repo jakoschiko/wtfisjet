@@ -36,7 +36,7 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     ///
     /// # Panic
     ///
-    /// This function panics if the implementation does no support the dimension count.
+    /// This function panics if the implementation does not support the dimension count.
     fn zeros(dim: usize) -> Self;
 
     /// Return an instance with a one for the given dimension and zero for all other dimensions.
@@ -58,7 +58,7 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     ///
     /// # Panic
     ///
-    /// This function panics if the implementation does no support the dimension count.
+    /// This function panics if the implementation does not support the dimension count.
     fn from_dense<E: IntoIterator<Item = N>>(dense_elems: E) -> Self;
 
     /// Returns an instance that contains the elements emitted by the given iterator

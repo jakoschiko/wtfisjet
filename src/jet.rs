@@ -41,6 +41,11 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
     /// Creates an instance with the given real part and zeros for the infinitesimal part.
     ///
     /// This represents a jet that has no dependencies to any variables.
+    ///
+    /// # Panic
+    ///
+    /// This function panics if the implementation for `Infinitesimal` does no support the
+    /// dimension count.
     pub fn constant(real: N, dim: usize) -> Self {
         Self {
             real,
@@ -53,6 +58,12 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
     ///
     /// Useful for initializing the inputs of the function for which you want to calculate the
     /// derivatives. Use a different index for each input.
+    ///
+    /// # Panic
+    ///
+    /// This function panics if
+    /// - the given index is equal to or greater than the dimension count or
+    /// - the implementation for `Infinitesimal` does not support the dimension count.
     pub fn variable(real: N, idx: usize, dim: usize) -> Self {
         Self {
             real,
