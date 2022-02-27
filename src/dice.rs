@@ -17,49 +17,37 @@ pub fn big_rational_number() -> impl Die<num_rational::BigRational> {
 #[cfg(any(test, feature = "big-rational-number"))]
 /// Generates an arbitrary non-zero [`BigRational`].
 pub fn big_rational_non_zero_number() -> impl Die<num_rational::BigRational> {
-    dice::from_fn(|mut fate| {
+    use num_traits::{One, Zero};
+
+    let special_number_die = dice::one_of().three(
+        num_rational::BigRational::zero(),
+        num_rational::BigRational::one(),
+        -num_rational::BigRational::one(),
+    );
+
+    let number_die = dice::from_fn(|mut fate| {
         let numerator = fate.roll(dice::u32(1..)).into();
         let denominator = fate.roll(dice::i32(1..)).into();
         num_rational::BigRational::new(numerator, denominator)
-    })
+    });
+
+    dice::weighted_one_of_die().two((1, special_number_die), (7, number_die))
 }
 
-/// Generates an [`Infinitesimal`] with a single one in an arbitrary dimension and zeros
-/// for all other dimensions.
+/// Generates an [`Infinitesimal`] using [`Infinitesimal::one`].
 ///
-/// If the dimension count is zero, an [`Infinitesimal`] without any elements will be generated.
-pub fn infinitesimal_variable<N: Number, I: Infinitesimal<N>>(dim: usize) -> impl Die<I> {
-    dice::from_fn(move |mut fate| {
-        if dim == 0 {
-            I::zeros(0)
-        } else {
-            let idx = fate.roll(dice::uni_usize(0..dim));
-            I::one(idx, dim)
-        }
-    })
-}
+/// # Panic
+///
+/// This function panics if the given dimension count is zero.
+pub fn infinitesimal_one<N: Number, I: Infinitesimal<N>>(dim: usize) -> impl Die<I> {
+    assert!(
+        dim != 0,
+        "Generator infinitesimal_one must not be used with dimension count 0"
+    );
 
-/// Generates a [`Infinitesimal`] with arbitrary elements using [`Infinitesimal::from_dense`].
-pub fn infinitesimal_dense<N: Number, I: Infinitesimal<N>, NDI: Die<N>>(
-    dim: usize,
-    infinitesimal_number_die: NDI,
-) -> impl Die<I> {
     dice::from_fn(move |mut fate| {
-        let elems = fate.roll(dice::vec(&infinitesimal_number_die, dim));
-        I::from_dense(elems)
-    })
-}
-
-/// Generates a [`Infinitesimal`] with arbitrary elements using [`Infinitesimal::from_sparse`].
-pub fn infinitesimal_sparse<N: Number, I: Infinitesimal<N>, NDI: Die<N>>(
-    dim: usize,
-    infinitesimal_number_die: NDI,
-) -> impl Die<I> {
-    dice::from_fn(move |mut fate| {
-        let number_with_index_die =
-            dice::zip().two(dice::uni_usize(0..dim), &infinitesimal_number_die);
-        let elems = fate.roll(dice::vec(number_with_index_die, 0..=dim));
-        I::from_sparse(elems, dim)
+        let idx = fate.roll(dice::uni_usize(0..dim));
+        I::one(idx, dim)
     })
 }
 
@@ -69,11 +57,39 @@ pub fn infinitesimal<N: Number, I: Infinitesimal<N>, NDI: Die<N>>(
     infinitesimal_number_die: NDI,
 ) -> impl Die<I> {
     dice::from_fn(move |mut fate| {
-        let infinitesimal_die = dice::one_of_die_once().three(
-            infinitesimal_variable(dim),
-            infinitesimal_dense(dim, &infinitesimal_number_die),
-            infinitesimal_sparse(dim, &infinitesimal_number_die),
+        let infinitesimal_zeros_die = dice::from_fn(|_| I::zeros(dim));
+
+        let safe_infinitesimal_one_die = dice::from_fn(|mut fate| {
+            if dim == 0 {
+                I::zeros(0)
+            } else {
+                fate.roll(infinitesimal_one(dim))
+            }
+        });
+
+        let infinitesimal_dense_die = dice::from_fn(|mut fate| {
+            let elems = fate.roll(dice::vec(&infinitesimal_number_die, dim));
+            I::from_dense(elems)
+        });
+
+        let infinitesimal_sparse_die = dice::from_fn(|mut fate| {
+            if dim == 0 {
+                I::zeros(0)
+            } else {
+                let number_with_index_die =
+                    dice::zip().two(dice::uni_usize(0..dim), &infinitesimal_number_die);
+                let elems = fate.roll(dice::vec(number_with_index_die, 0..=dim));
+                I::from_sparse(elems, dim)
+            }
+        });
+
+        // Compose different generators because each of them has a different distribution
+        let infinitesimal_die = dice::one_of_die().three(
+            dice::one_of_die().two(&infinitesimal_zeros_die, &safe_infinitesimal_one_die),
+            &infinitesimal_dense_die,
+            &infinitesimal_sparse_die,
         );
+
         fate.roll(infinitesimal_die)
     })
 }
@@ -90,10 +106,19 @@ pub fn jet_constant<N: Number, I: Infinitesimal<N>, NDR: Die<N>>(
 }
 
 /// Generates a [`Jet`] using [`Jet::variable`].
+///
+/// # Panic
+///
+/// This function panics if the given dimension count is zero.
 pub fn jet_variable<N: Number, I: Infinitesimal<N>, NDR: Die<N>>(
     dim: usize,
     real_number_die: NDR,
 ) -> impl Die<Jet<N, I>> {
+    assert!(
+        dim != 0,
+        "Generator jet_variable must not be used with dimension count 0"
+    );
+
     dice::from_fn(move |mut fate| {
         let real = fate.roll(&real_number_die);
         let idx = fate.roll(dice::uni_usize(0..dim));
@@ -115,9 +140,18 @@ pub fn jet<N: Number, I: Infinitesimal<N>, NDR: Die<N>, NDI: Die<N>>(
             )
             .map_once(|(real, infinitesimal)| Jet::new(real, infinitesimal));
 
+        let safe_variable_die = dice::from_fn(|mut fate| {
+            if dim == 0 {
+                fate.roll(jet_constant(dim, &real_number_die))
+            } else {
+                fate.roll(jet_variable(dim, &real_number_die))
+            }
+        });
+
+        // Compose different generators because each of them has a different distribution
         let jet_die = dice::one_of_die_once().three(
             jet_constant(dim, &real_number_die),
-            jet_variable(dim, &real_number_die),
+            safe_variable_die,
             any_jet_die,
         );
         fate.roll(jet_die)
