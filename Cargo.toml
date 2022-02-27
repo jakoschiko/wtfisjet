@@ -11,12 +11,14 @@ num-rational = { version = "0.4.0", optional = true }
 intmap = { version = "0.7.1", optional = true }
 array-init = { version = "2.0.0", optional = true }
 dicetest = { version = "0.3.0", optional = true }
+diceprop = { version = "0.2.0", optional = true }
 
 [dev-dependencies]
 num-rational = "0.4.0"
 intmap = "0.7.1"
 array-init = "2.0.0"
 dicetest = "0.3.0"
+diceprop = "0.2.0"
 
 [features]
 default = []
@@ -24,3 +26,4 @@ big-rational-number = ["num-rational"]
 sparse-infinitesimal = ["intmap"]
 const-infinitesimal = ["array-init"]
 dice = ["dicetest"]
+asserts = ["dicetest", "diceprop"]

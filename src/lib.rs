@@ -39,6 +39,11 @@
 //!
 //! If enabled, the module `wtfisjet::dice` is available. It provides generators for
 //! random test data. It will require the dependency `dicetest`.
+//!
+//! ## `asserts` (disabled by default)
+//!
+//! If enabled, the module `wtfisjet::asserts` is available. It provides assertions for tests.
+//! It will require the dependency `dicetest` and `diceprop`.
 
 mod number;
 pub use number::Number;
@@ -55,3 +60,6 @@ pub use jet::Jet;
 
 #[cfg(any(test, feature = "dice"))]
 pub mod dice;
+
+#[cfg(any(test, feature = "asserts"))]
+pub mod asserts;
