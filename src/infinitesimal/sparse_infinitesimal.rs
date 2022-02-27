@@ -96,7 +96,14 @@ impl<N: Number> Infinitesimal<N> for SparseInfinitesimal<N> {
 
             if let Some(cast_idx) = cast_idx {
                 if !elem.is_zero() {
+                    // Unfortunately `insert` doesn't override the previous value, so we need
+                    // to remove it first.
+                    elems.remove(cast_idx);
                     elems.insert(cast_idx, elem);
+                } else {
+                    // In case of index collisions, we prefer the later value and the later value
+                    // is zero, so we must take care that no value is stored for the index
+                    elems.remove(cast_idx);
                 }
             } else {
                 panic!("Index {idx} must not be equal to or greater than dimension count {dim}")
@@ -256,5 +263,24 @@ impl<'a, N: Number> Iterator for SparseInfinitesimalSparseElems<'a, N> {
             let cast_idx = idx as usize;
             (cast_idx, elem)
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dicetest::prelude::*;
+
+    use crate::SparseInfinitesimal;
+
+    #[test]
+    fn valid_infinitesimal_impl() {
+        let dim_die = dice::length(..);
+        let numbers_die = crate::dice::big_rational_non_zero_number();
+
+        crate::asserts::assert_valid_infinitesimal_impl::<_, SparseInfinitesimal<_>, _, _>(
+            Dicetest::repeatedly(),
+            dim_die,
+            numbers_die,
+        );
     }
 }

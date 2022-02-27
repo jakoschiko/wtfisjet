@@ -124,3 +124,22 @@ impl<'a, N: Number> Iterator for NoInfinitesimalSparseElems<'a, N> {
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use dicetest::prelude::*;
+
+    use crate::NoInfinitesimal;
+
+    #[test]
+    fn valid_infinitesimal_impl() {
+        let dim_die = dice::just(0);
+        let numbers_die = crate::dice::big_rational_non_zero_number();
+
+        crate::asserts::assert_valid_infinitesimal_impl::<_, NoInfinitesimal, _, _>(
+            Dicetest::repeatedly(),
+            dim_die,
+            numbers_die,
+        );
+    }
+}

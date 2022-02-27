@@ -98,7 +98,11 @@ impl<N: Number, const D: usize> Infinitesimal<N> for ConstInfinitesimal<N, D> {
     }
 
     fn elem(&self, idx: usize) -> &N {
-        panic!("Index {idx} must not be equal to or greater than dimension count {D}")
+        if idx >= D {
+            panic!("Index {idx} must not be equal to or greater than dimension count {D}")
+        } else {
+            &self.elems[idx]
+        }
     }
 
     fn add(mut self, rhs: Self) -> Self {
@@ -160,5 +164,58 @@ impl<'a, N: Number> Iterator for ConstInfinitesimalSparseElems<'a, N> {
             }
         }
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use dicetest::prelude::*;
+
+    use crate::ConstInfinitesimal;
+
+    fn valid_infinitesimal_impl<const N: usize>(dicetest: Dicetest) {
+        let dim_die = dice::just(N);
+        let numbers_die = crate::dice::big_rational_non_zero_number();
+
+        crate::asserts::assert_valid_infinitesimal_impl::<_, ConstInfinitesimal<_, N>, _, _>(
+            dicetest,
+            dim_die,
+            numbers_die,
+        );
+    }
+
+    #[test]
+    fn valid_infinitesimal_impl_0() {
+        valid_infinitesimal_impl::<0>(Dicetest::repeatedly());
+    }
+
+    #[test]
+    fn valid_infinitesimal_impl_1() {
+        valid_infinitesimal_impl::<1>(Dicetest::repeatedly());
+    }
+
+    #[test]
+    fn valid_infinitesimal_impl_2() {
+        valid_infinitesimal_impl::<2>(Dicetest::repeatedly());
+    }
+
+    #[test]
+    fn valid_infinitesimal_impl_3() {
+        valid_infinitesimal_impl::<3>(Dicetest::repeatedly());
+    }
+
+    #[test]
+    fn valid_infinitesimal_impl_4() {
+        valid_infinitesimal_impl::<4>(Dicetest::repeatedly());
+    }
+
+    #[test]
+    fn valid_infinitesimal_impl_17() {
+        valid_infinitesimal_impl::<17>(Dicetest::repeatedly());
+    }
+
+    #[test]
+    fn valid_infinitesimal_impl_71() {
+        valid_infinitesimal_impl::<71>(Dicetest::repeatedly());
     }
 }
