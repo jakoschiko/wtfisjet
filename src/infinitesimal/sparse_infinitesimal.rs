@@ -200,12 +200,9 @@ impl<N: Number> Infinitesimal<N> for SparseInfinitesimal<N> {
 
     fn neg(mut self) -> Self {
         for elem in self.elems.values_mut() {
-            // Unfortunately, there is no in-place version of `Neg`.
-            // So we need to use a workaround.
-            let temp = std::mem::replace(elem, N::zero());
-            *elem = -temp;
+            elem.neg_in_place();
 
-            // We expect that `Neg::neg` doesn't turn a non-zero value into a zero value,
+            // We expect that `neg_in_place` doesn't turn a non-zero value into a zero value,
             // hence we don't need to check for zero here.
         }
         self

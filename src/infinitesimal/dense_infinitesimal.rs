@@ -115,10 +115,7 @@ impl<N: Number> Infinitesimal<N> for DenseInfinitesimal<N> {
 
     fn neg(mut self) -> Self {
         for elem in self.elems.iter_mut() {
-            // Unfortunately, there is no in-place version of `Neg`.
-            // So we need to use a workaround.
-            let temp = std::mem::replace(elem, N::zero());
-            *elem = -temp;
+            elem.neg_in_place();
         }
         self
     }

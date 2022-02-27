@@ -119,11 +119,11 @@ impl<N: Number, const D: usize> Infinitesimal<N> for ConstInfinitesimal<N, D> {
         self
     }
 
-    fn neg(self) -> Self {
-        // Unfortunately, there is no in-place version of `Neg`.
-        // So we map the whole array instead.
-        let elems = self.elems.map(|e| -e);
-        Self { elems }
+    fn neg(mut self) -> Self {
+        for elem in self.elems.iter_mut() {
+            elem.neg_in_place();
+        }
+        self
     }
 
     fn scale(mut self, factor: N) -> Self {

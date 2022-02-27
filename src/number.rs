@@ -21,11 +21,30 @@ pub trait Number:
     + Clone
     + PartialOrd
 {
+    /// Same as [`Neg::neg`](std::ops::Neg::neg), but in place.
+    fn neg_in_place(&mut self);
 }
 
-impl Number for f32 {}
+impl Number for f32 {
+    #[inline]
+    fn neg_in_place(&mut self) {
+        *self = -*self;
+    }
+}
 
-impl Number for f64 {}
+impl Number for f64 {
+    #[inline]
+    fn neg_in_place(&mut self) {
+        *self = -*self;
+    }
+}
 
 #[cfg(any(test, feature = "big-rational-number"))]
-impl Number for num_rational::BigRational {}
+impl Number for num_rational::BigRational {
+    fn neg_in_place(&mut self) {
+        use num_traits::Zero;
+
+        let temp = std::mem::replace(self, Self::zero());
+        *self = -temp;
+    }
+}
