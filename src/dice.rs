@@ -7,20 +7,29 @@ use crate::{Infinitesimal, Jet, Number};
 #[cfg(any(test, feature = "big-rational-number"))]
 /// Generates an arbitrary [`BigRational`].
 pub fn big_rational_number() -> impl Die<num_rational::BigRational> {
-    dice::from_fn(|mut fate| {
+    use num_traits::{One, Zero};
+
+    let special_number_die = dice::one_of().three(
+        num_rational::BigRational::zero(),
+        num_rational::BigRational::one(),
+        -num_rational::BigRational::one(),
+    );
+
+    let number_die = dice::from_fn(|mut fate| {
         let numerator = fate.roll(dice::u32(..)).into();
         let denominator = fate.roll(dice::i32(1..)).into();
         num_rational::BigRational::new(numerator, denominator)
-    })
+    });
+
+    dice::weighted_one_of_die().two((1, special_number_die), (7, number_die))
 }
 
 #[cfg(any(test, feature = "big-rational-number"))]
 /// Generates an arbitrary non-zero [`BigRational`].
 pub fn big_rational_non_zero_number() -> impl Die<num_rational::BigRational> {
-    use num_traits::{One, Zero};
+    use num_traits::One;
 
-    let special_number_die = dice::one_of().three(
-        num_rational::BigRational::zero(),
+    let special_number_die = dice::one_of().two(
         num_rational::BigRational::one(),
         -num_rational::BigRational::one(),
     );
