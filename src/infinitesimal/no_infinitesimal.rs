@@ -27,10 +27,12 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
         N: 'a,
     = NoInfinitesimalSparseElems<'a, N>;
 
+    #[inline]
     fn dim(&self) -> usize {
         0
     }
 
+    #[inline]
     fn zeros(dim: usize) -> Self {
         if dim == 0 {
             NoInfinitesimal
@@ -39,6 +41,7 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
         }
     }
 
+    #[cold]
     fn one(idx: usize, dim: usize) -> Self {
         if dim == 0 {
             panic!("NoInfinitesimal doesn't support dimension with index {idx}")
@@ -47,6 +50,7 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
         }
     }
 
+    #[inline]
     fn from_dense<E: IntoIterator<Item = N>>(dense_elems: E) -> Self {
         let dim = dense_elems.into_iter().count();
         if dim == 0 {
@@ -56,6 +60,7 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
         }
     }
 
+    #[inline]
     fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: usize) -> Self {
         if dim == 0 {
             if let Some((idx, _)) = sparse_elems.into_iter().next() {
@@ -68,34 +73,42 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
         }
     }
 
+    #[inline]
     fn is_sparse() -> bool {
         false
     }
 
+    #[inline]
     fn dense_elems(&self) -> Self::DenseElems<'_> {
         NoInfinitesimalDenseElems { _n: PhantomData }
     }
 
+    #[inline]
     fn sparse_elems(&self) -> Self::SparseElems<'_> {
         NoInfinitesimalSparseElems { _n: PhantomData }
     }
 
+    #[cold]
     fn elem(&self, idx: usize) -> &N {
         panic!("NoInfinitesimal doesn't support dimension with index {idx}")
     }
 
+    #[inline]
     fn add(self, _rhs: Self) -> Self {
         NoInfinitesimal
     }
 
+    #[inline]
     fn sub(self, _rhs: Self) -> Self {
         NoInfinitesimal
     }
 
+    #[inline]
     fn neg(self) -> Self {
         NoInfinitesimal
     }
 
+    #[inline]
     fn scale(self, _factor: N) -> Self {
         NoInfinitesimal
     }
