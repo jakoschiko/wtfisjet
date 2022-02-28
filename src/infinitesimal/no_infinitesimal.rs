@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Infinitesimal, Number};
+use crate::{Dim, Infinitesimal, Number};
 
 /// Implementation for [`Infinitesimal`] with zero dimensions.
 ///
@@ -28,48 +28,48 @@ impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
     = NoInfinitesimalSparseElems<'a, N>;
 
     #[inline]
-    fn dim(&self) -> usize {
-        0
+    fn dim(&self) -> Dim {
+        Dim(0)
     }
 
     #[inline]
-    fn zeros(dim: usize) -> Self {
-        if dim == 0 {
+    fn zeros(dim: Dim) -> Self {
+        if dim.0 == 0 {
             NoInfinitesimal
         } else {
-            panic!("NoInfinitesimal doesn't support dimension count {dim}")
+            panic!("NoInfinitesimal doesn't support dimension count {}", dim.0)
         }
     }
 
     #[cold]
-    fn one(idx: usize, dim: usize) -> Self {
-        if dim == 0 {
+    fn one(idx: usize, dim: Dim) -> Self {
+        if dim.0 == 0 {
             panic!("NoInfinitesimal doesn't support dimension with index {idx}")
         } else {
-            panic!("NoInfinitesimal doesn't support dimension count {dim}")
+            panic!("NoInfinitesimal doesn't support dimension count {}", dim.0)
         }
     }
 
     #[inline]
     fn from_dense<E: IntoIterator<Item = N>>(dense_elems: E) -> Self {
-        let dim = dense_elems.into_iter().count();
-        if dim == 0 {
+        let dim = Dim(dense_elems.into_iter().count());
+        if dim.0 == 0 {
             NoInfinitesimal
         } else {
-            panic!("NoInfinitesimal doesn't support dimension count {dim}")
+            panic!("NoInfinitesimal doesn't support dimension count {}", dim.0)
         }
     }
 
     #[inline]
-    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: usize) -> Self {
-        if dim == 0 {
+    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: Dim) -> Self {
+        if dim.0 == 0 {
             if let Some((idx, _)) = sparse_elems.into_iter().next() {
                 panic!("NoInfinitesimal doesn't support dimension with index {idx}")
             } else {
                 NoInfinitesimal
             }
         } else {
-            panic!("NoInfinitesimal doesn't support dimension count {dim}")
+            panic!("NoInfinitesimal doesn't support dimension count {}", dim.0)
         }
     }
 
@@ -142,11 +142,11 @@ impl<'a, N: Number> Iterator for NoInfinitesimalSparseElems<'a, N> {
 mod tests {
     use dicetest::prelude::*;
 
-    use crate::NoInfinitesimal;
+    use crate::{Dim, NoInfinitesimal};
 
     #[test]
     fn valid_infinitesimal_impl() {
-        let dim_die = dice::just(0);
+        let dim_die = dice::just(Dim(0));
         let numbers_die = crate::dice::big_rational_non_zero_number();
 
         crate::asserts::assert_valid_infinitesimal_impl::<_, NoInfinitesimal, _, _>(

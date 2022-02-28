@@ -1,6 +1,6 @@
 use intmap::IntMap;
 
-use crate::{Infinitesimal, Number};
+use crate::{Dim, Infinitesimal, Number};
 
 /// Implementation for [`Infinitesimal`] that uses a sparse representation.
 ///
@@ -26,26 +26,32 @@ impl<N: Number> Infinitesimal<N> for SparseInfinitesimal<N> {
         N: 'a,
     = SparseInfinitesimalSparseElems<'a, N>;
 
-    fn dim(&self) -> usize {
+    fn dim(&self) -> Dim {
         // Should never fail because the original `dim` value was of type `usize`.
-        self.cast_dim as usize
+        Dim(self.cast_dim as usize)
     }
 
-    fn zeros(dim: usize) -> Self {
-        if let Ok(cast_dim) = dim.try_into() {
+    fn zeros(dim: Dim) -> Self {
+        if let Ok(cast_dim) = dim.0.try_into() {
             Self {
                 cast_dim,
                 zero: N::zero(),
                 elems: IntMap::new(),
             }
         } else {
-            panic!("SparseInfinitesimal doesn't support dimension count {dim} because it doesn't fit into u64")
+            panic!(
+                "SparseInfinitesimal doesn't support dimension count {0} because it doesn't fit into u64",
+                dim.0
+            )
         }
     }
 
-    fn one(idx: usize, dim: usize) -> Self {
-        if idx >= dim {
-            panic!("Index {idx} must not be equal to or greater than dimension count {dim}")
+    fn one(idx: usize, dim: Dim) -> Self {
+        if idx >= dim.0 {
+            panic!(
+                "Index {idx} must not be equal to or greater than dimension count {}",
+                dim.0
+            )
         } else {
             // Should never fail because we already checked that `dim` fits into `u64` and
             // `idx` is smaller than `dim`.
@@ -59,36 +65,42 @@ impl<N: Number> Infinitesimal<N> for SparseInfinitesimal<N> {
     fn from_dense<E: IntoIterator<Item = N>>(dense_elems: E) -> Self {
         let iter = dense_elems.into_iter();
         let mut elems = IntMap::with_capacity(iter.size_hint().0);
-        let mut dim: usize = 0;
+        let mut dim = Dim(0);
 
         for elem in iter {
             if !elem.is_zero() {
                 // It doesn't matter that this could fail, we'll check `dim` later
-                let cast_idx = dim as u64;
+                let cast_idx = dim.0 as u64;
                 elems.insert(cast_idx, elem);
             }
 
-            dim += 1;
+            dim.0 += 1;
         }
 
-        if let Ok(cast_dim) = dim.try_into() {
+        if let Ok(cast_dim) = dim.0.try_into() {
             Self {
                 cast_dim,
                 zero: N::zero(),
                 elems,
             }
         } else {
-            panic!("SparseInfinitesimal doesn't support dimension count {dim} because it doesn't fit into u64")
+            panic!(
+                "SparseInfinitesimal doesn't support dimension count {} because it doesn't fit into u64",
+                dim.0
+            )
         }
     }
 
-    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: usize) -> Self {
-        let mut elems = IntMap::with_capacity(dim);
+    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: Dim) -> Self {
+        let mut elems = IntMap::with_capacity(dim.0);
 
-        let cast_dim = if let Ok(cast_dim) = dim.try_into() {
+        let cast_dim = if let Ok(cast_dim) = dim.0.try_into() {
             cast_dim
         } else {
-            panic!("SparseInfinitesimal doesn't support dimension count {dim} because it doesn't fit into u64")
+            panic!(
+                "SparseInfinitesimal doesn't support dimension count {} because it doesn't fit into u64",
+                dim.0
+            )
         };
 
         for (idx, elem) in sparse_elems {
@@ -106,7 +118,10 @@ impl<N: Number> Infinitesimal<N> for SparseInfinitesimal<N> {
                     elems.remove(cast_idx);
                 }
             } else {
-                panic!("Index {idx} must not be equal to or greater than dimension count {dim}")
+                panic!(
+                    "Index {idx} must not be equal to or greater than dimension count {}",
+                    dim.0
+                )
             }
         }
 
@@ -138,8 +153,11 @@ impl<N: Number> Infinitesimal<N> for SparseInfinitesimal<N> {
 
     fn elem(&self, idx: usize) -> &N {
         let dim = self.dim();
-        if idx >= dim {
-            panic!("Index {idx} must not be equal to or greater than dimension count {dim}")
+        if idx >= dim.0 {
+            panic!(
+                "Index {idx} must not be equal to or greater than dimension count {}",
+                dim.0
+            )
         } else {
             // Should never fail because we already checked that `dim` fits into `u64` and
             // `idx` is smaller than `dim`.
@@ -153,7 +171,10 @@ impl<N: Number> Infinitesimal<N> for SparseInfinitesimal<N> {
         let right_dim = rhs.cast_dim;
 
         if left_dim != right_dim {
-            panic!("Cannot add infinitesimal parts with different dimension counts {left_dim} and {right_dim}")
+            panic!(
+                "Cannot add infinitesimal parts with different dimension counts {} and {}",
+                left_dim, right_dim
+            )
         } else {
             for (idx, right_elem) in rhs.elems.into_iter() {
                 // Unfortunately, there is no entry API for `IntMap`.
@@ -271,7 +292,7 @@ mod tests {
 
     #[test]
     fn valid_infinitesimal_impl() {
-        let dim_die = dice::length(..);
+        let dim_die = crate::dice::dim();
         let numbers_die = crate::dice::big_rational_non_zero_number();
 
         crate::asserts::assert_valid_infinitesimal_impl::<_, SparseInfinitesimal<_>, _, _>(

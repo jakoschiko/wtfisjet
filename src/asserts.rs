@@ -6,7 +6,7 @@ use diceprop::{ops, Elem, Fun1, Fun2, Set, Vars};
 use dicetest::hint_section;
 use dicetest::prelude::*;
 
-use crate::{Infinitesimal, Number};
+use crate::{Dim, Infinitesimal, Number};
 
 /// Asserts that the given implementation of [`Infinitesimal`] fulfills all requires properties.
 pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
@@ -16,14 +16,14 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
 ) where
     N: Number + PartialEq,
     I: Infinitesimal<N> + Debug,
-    DD: Die<usize> + RefUnwindSafe + UnwindSafe,
+    DD: Die<Dim> + RefUnwindSafe + UnwindSafe,
     DN: Die<N> + RefUnwindSafe + UnwindSafe,
 {
     dicetest.run(move |mut fate| {
         let dim = fate.roll(&dim_die);
         hint!("dim = {:?}", dim);
 
-        let valid_idx_die = if dim == 0 { None } else { Some(dice::uni_usize(..dim)) };
+        let valid_idx_die = if dim.0 == 0 { None } else { Some(dice::uni_usize(..dim.0)) };
         let infinitesimal_die = any_infinitesimal::<_, I, _>(dim, &number_die);
         let infinitesimal = fate.roll(&infinitesimal_die);
 
@@ -37,9 +37,9 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
             hint!("`I::zeros()` = {infinitesimal:?}");
 
             let infinitesimal_dim = infinitesimal.dim();
-            assert_eq!(infinitesimal_dim, dim, "Result of `I::zeros` has wrong dimension {infinitesimal_dim}");
+            assert_eq!(infinitesimal_dim, dim, "Result of `I::zeros` has wrong dimension {}", infinitesimal_dim.0);
 
-            for idx in 0..dim {
+            for idx in 0..dim.0 {
                 let elem = infinitesimal.elem(idx);
                 assert!(elem.is_zero(), "The element of `I::zeros` with index {idx} must be zero, but is {elem:?}");
             }
@@ -52,12 +52,12 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
                 let one_idx = fate.roll(valid_idx_die);
 
                 let infinitesimal = I::one(one_idx, dim);
-                hint!("`I::one({one_idx}, {dim})` = {infinitesimal:?}");
+                hint!("`I::one({one_idx}, {})` = {infinitesimal:?}", dim.0);
 
                 let infinitesimal_dim = infinitesimal.dim();
-                assert_eq!(infinitesimal_dim, dim, "Result of `I::one` has wrong dimension {infinitesimal_dim}");
+                assert_eq!(infinitesimal_dim, dim, "Result of `I::one` has wrong dimension {}", infinitesimal_dim.0);
 
-                for idx in 0..dim {
+                for idx in 0..dim.0 {
                     let elem = infinitesimal.elem(idx);
 
                     if idx == one_idx {
@@ -72,15 +72,15 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
         {
             hint_section!("Is `I::from_dense` lawful?");
 
-            let numbers = fate.roll(dice::vec(&number_die, dim));
+            let numbers = fate.roll(dice::vec(&number_die, dim.0));
 
             let infinitesimal = I::from_dense(numbers.clone());
             hint!("`I::from_dense({numbers:?})` = {infinitesimal:?}");
 
             let infinitesimal_dim = infinitesimal.dim();
-            assert_eq!(infinitesimal_dim, dim, "Result of `I::from_dense` has wrong dimension {infinitesimal_dim}");
+            assert_eq!(infinitesimal_dim, dim, "Result of `I::from_dense` has wrong dimension {}", infinitesimal_dim.0);
 
-            for idx in 0..dim {
+            for idx in 0..dim.0 {
                 let elem = infinitesimal.elem(idx);
                 let expected = &numbers[idx];
 
@@ -107,9 +107,9 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
                 hint!("`I::from_sparse({numbers:?}, dim)` = {infinitesimal:?}");
 
                 let infinitesimal_dim = infinitesimal.dim();
-                assert_eq!(infinitesimal_dim, dim, "Result of `I::from_sparse` has wrong dimension {infinitesimal_dim}");
+                assert_eq!(infinitesimal_dim, dim, "Result of `I::from_sparse` has wrong dimension {}", infinitesimal_dim.0);
 
-                for idx in 0..dim {
+                for idx in 0..dim.0 {
                     let elem = infinitesimal.elem(idx);
 
                     if let Some(expected) = spare_numbers_map.get(&idx) {
@@ -128,9 +128,9 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
             hint!("`I::dense_elems({infinitesimal:?})` = {dense_elems:?}");
 
             let dense_elems_len = dense_elems.len();
-            assert_eq!(dense_elems_len, dim, "Result of `I::dense_elems` has wrong length {dense_elems_len}");
+            assert_eq!(dense_elems_len, dim.0, "Result of `I::dense_elems` has wrong length {dense_elems_len}");
 
-            for idx in 0..dim {
+            for idx in 0..dim.0 {
                 let elem = &dense_elems[idx];
                 let expected = infinitesimal.elem(idx);
 
@@ -147,7 +147,7 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
             let mut seen_indices = BTreeSet::new();
 
             for (idx, elem) in sparse_elems {
-                assert!(idx < dim, "`I::sparse_elems` must emit only indices smaller than the dimension count, but index {idx} was emitted");
+                assert!(idx < dim.0, "`I::sparse_elems` must emit only indices smaller than the dimension count, but index {idx} was emitted");
 
                 assert!(!seen_indices.contains(&idx), "`I::sparse_elems` must emit each index at most once, but the index {idx} was emitted multiple times");
                 seen_indices.insert(idx);
@@ -161,7 +161,7 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
 
             let mut expected_indices = BTreeSet::new();
 
-            for idx in 0..dim {
+            for idx in 0..dim.0 {
                 if !infinitesimal.elem(idx).is_zero() {
                     expected_indices.insert(idx);
                 }
@@ -200,7 +200,7 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
 // that one of these functions returns an invalid instance, e.g. an instance
 // with sparse representation that contains a zero.
 fn any_infinitesimal<N: Number, I: Infinitesimal<N>, NDI: Die<N>>(
-    dim: usize,
+    dim: Dim,
     infinitesimal_number_die: NDI,
 ) -> impl Die<I> {
     dice::from_fn(move |mut fate| {

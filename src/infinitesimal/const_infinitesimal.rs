@@ -1,4 +1,4 @@
-use crate::{Infinitesimal, Number};
+use crate::{Dim, Infinitesimal, Number};
 
 /// Implementation for [`Infinitesimal`] with const dimension count.
 ///
@@ -29,26 +29,32 @@ impl<N: Number, const D: usize> Infinitesimal<N> for ConstInfinitesimal<N, D> {
         N: 'a,
     = ConstInfinitesimalSparseElems<'a, N>;
 
-    fn dim(&self) -> usize {
-        D
+    fn dim(&self) -> Dim {
+        Dim(D)
     }
 
-    fn zeros(dim: usize) -> Self {
-        if dim != D {
-            panic!("ConstInfinitesimal<_, {D}> doesn't support dimension count {dim}")
+    fn zeros(dim: Dim) -> Self {
+        if dim.0 != D {
+            panic!(
+                "ConstInfinitesimal<_, {D}> doesn't support dimension count {}",
+                dim.0
+            )
         } else {
             let elems = array_init::array_init(|_| N::zero());
             ConstInfinitesimal { elems }
         }
     }
 
-    fn one(idx: usize, dim: usize) -> Self {
-        if dim != D {
-            panic!("ConstInfinitesimal<_, {D}> doesn't support dimension count {dim}")
+    fn one(idx: usize, dim: Dim) -> Self {
+        if dim.0 != D {
+            panic!(
+                "ConstInfinitesimal<_, {D}> doesn't support dimension count {}",
+                dim.0
+            )
         } else if idx >= D {
             panic!("Index {idx} must not be equal to or greater than dimension count {D}")
         } else {
-            let mut result = Self::zeros(D);
+            let mut result = Self::zeros(Dim(D));
             result.elems[idx] = N::one();
             result
         }
@@ -62,11 +68,14 @@ impl<N: Number, const D: usize> Infinitesimal<N> for ConstInfinitesimal<N, D> {
         }
     }
 
-    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: usize) -> Self {
-        if dim != D {
-            panic!("ConstInfinitesimal<_, {D}> doesn't support dimension count {dim}")
+    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: Dim) -> Self {
+        if dim.0 != D {
+            panic!(
+                "ConstInfinitesimal<_, {D}> doesn't support dimension count {}",
+                dim.0
+            )
         } else {
-            let mut result = Self::zeros(D);
+            let mut result = Self::zeros(Dim(D));
 
             for (idx, elem) in sparse_elems {
                 if let Some(target) = result.elems.get_mut(idx) {
@@ -171,10 +180,10 @@ impl<'a, N: Number> Iterator for ConstInfinitesimalSparseElems<'a, N> {
 mod tests {
     use dicetest::prelude::*;
 
-    use crate::ConstInfinitesimal;
+    use crate::{ConstInfinitesimal, Dim};
 
     fn valid_infinitesimal_impl<const N: usize>(dicetest: Dicetest) {
-        let dim_die = dice::just(N);
+        let dim_die = dice::just(Dim(N));
         let numbers_die = crate::dice::big_rational_non_zero_number();
 
         crate::asserts::assert_valid_infinitesimal_impl::<_, ConstInfinitesimal<_, N>, _, _>(

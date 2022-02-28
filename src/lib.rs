@@ -48,6 +48,9 @@
 mod number;
 pub use number::Number;
 
+mod dim;
+pub use dim::Dim;
+
 mod infinitesimal;
 #[cfg(any(test, feature = "const-infinitesimal"))]
 pub use infinitesimal::ConstInfinitesimal;

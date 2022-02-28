@@ -1,4 +1,4 @@
-use crate::Number;
+use crate::{Dim, Number};
 
 /// The n-dimensional infinitesimal part of a [`Jet`] that represents the derivatives.
 ///
@@ -27,7 +27,7 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
         N: 'a;
 
     /// Returns the dimension count of the infinitesimal part.
-    fn dim(&self) -> usize;
+    fn dim(&self) -> Dim;
 
     /// Returns an instance with zero for all dimensions.
     ///
@@ -37,7 +37,7 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// # Panic
     ///
     /// This function panics if the implementation does not support the dimension count.
-    fn zeros(dim: usize) -> Self;
+    fn zeros(dim: Dim) -> Self;
 
     /// Return an instance with a one for the given dimension and zero for all other dimensions.
     ///
@@ -49,7 +49,7 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// This function panics if
     /// - the given index is equal to or greater than the dimension count or
     /// - the implementation does not support the dimension count.
-    fn one(idx: usize, dim: usize) -> Self;
+    fn one(idx: usize, dim: Dim) -> Self;
 
     /// Returns an instance that contains the elements emitted by the given iterator.
     ///
@@ -74,7 +74,7 @@ pub trait Infinitesimal<N: Number>: Clone + PartialEq {
     /// - the iterator emits an element with an index equal to or greater than the
     /// dimension count or
     /// - the implementation does no support the dimension count.
-    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: usize) -> Self;
+    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: Dim) -> Self;
 
     /// Returns whether the implementation uses a sparse representation that omits the zero
     /// elements.

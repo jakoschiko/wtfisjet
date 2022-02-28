@@ -1,4 +1,4 @@
-use crate::{Infinitesimal, Number};
+use crate::{Dim, Infinitesimal, Number};
 
 /// Implementation for [`Infinitesimal`] that uses a dense representation.
 ///
@@ -21,18 +21,21 @@ impl<N: Number> Infinitesimal<N> for DenseInfinitesimal<N> {
         N: 'a,
     = DenseInfinitesimalSparseElems<'a, N>;
 
-    fn dim(&self) -> usize {
-        self.elems.len()
+    fn dim(&self) -> Dim {
+        Dim(self.elems.len())
     }
 
-    fn zeros(dim: usize) -> Self {
-        let elems = std::iter::repeat_with(N::zero).take(dim).collect();
+    fn zeros(dim: Dim) -> Self {
+        let elems = std::iter::repeat_with(N::zero).take(dim.0).collect();
         Self { elems }
     }
 
-    fn one(idx: usize, dim: usize) -> Self {
-        if idx >= dim {
-            panic!("Index {idx} must not be equal to or greater than dimension count {dim}")
+    fn one(idx: usize, dim: Dim) -> Self {
+        if idx >= dim.0 {
+            panic!(
+                "Index {idx} must not be equal to or greater than dimension count {}",
+                dim.0
+            )
         } else {
             let mut result = Self::zeros(dim);
             result.elems[idx] = N::one();
@@ -45,14 +48,17 @@ impl<N: Number> Infinitesimal<N> for DenseInfinitesimal<N> {
         Self { elems }
     }
 
-    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: usize) -> Self {
+    fn from_sparse<E: IntoIterator<Item = (usize, N)>>(sparse_elems: E, dim: Dim) -> Self {
         let mut result = Self::zeros(dim);
 
         for (idx, elem) in sparse_elems {
             if let Some(target) = result.elems.get_mut(idx) {
                 *target = elem
             } else {
-                panic!("Index {idx} must not be equal to or greater than dimension count {dim}")
+                panic!(
+                    "Index {idx} must not be equal to or greater than dimension count {}",
+                    dim.0
+                )
             }
         }
 
@@ -78,8 +84,11 @@ impl<N: Number> Infinitesimal<N> for DenseInfinitesimal<N> {
 
     fn elem(&self, idx: usize) -> &N {
         let dim = self.dim();
-        if idx >= dim {
-            panic!("Index {idx} must not be equal to or greater than dimension count {dim}")
+        if idx >= dim.0 {
+            panic!(
+                "Index {idx} must not be equal to or greater than dimension count {}",
+                dim.0
+            )
         } else {
             &self.elems[idx]
         }
@@ -90,7 +99,10 @@ impl<N: Number> Infinitesimal<N> for DenseInfinitesimal<N> {
         let right_dim = rhs.dim();
 
         if left_dim != right_dim {
-            panic!("Cannot add infinitesimal parts with different dimension counts {left_dim} and {right_dim}")
+            panic!(
+                "Cannot add infinitesimal parts with different dimension counts {} and {}",
+                left_dim.0, right_dim.0
+            )
         } else {
             for (left_elem, right_elem) in self.elems.iter_mut().zip(rhs.elems.into_iter()) {
                 *left_elem += right_elem
@@ -104,7 +116,10 @@ impl<N: Number> Infinitesimal<N> for DenseInfinitesimal<N> {
         let right_dim = rhs.dim();
 
         if left_dim != right_dim {
-            panic!("Cannot subtract infinitesimal parts with different dimension counts {left_dim} and {right_dim}")
+            panic!(
+                "Cannot subtract infinitesimal parts with different dimension counts {} and {}",
+                left_dim.0, right_dim.0
+            )
         } else {
             for (left_elem, right_elem) in self.elems.iter_mut().zip(rhs.elems.into_iter()) {
                 *left_elem -= right_elem
@@ -169,7 +184,7 @@ mod tests {
 
     #[test]
     fn valid_infinitesimal_impl() {
-        let dim_die = dice::length(..);
+        let dim_die = crate::dice::dim();
         let numbers_die = crate::dice::big_rational_non_zero_number();
 
         crate::asserts::assert_valid_infinitesimal_impl::<_, DenseInfinitesimal<_>, _, _>(

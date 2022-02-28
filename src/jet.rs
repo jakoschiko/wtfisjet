@@ -5,7 +5,7 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 
 // TODO: Impl assign operators
 
-use crate::{Infinitesimal, Number};
+use crate::{Dim, Infinitesimal, Number};
 
 /// Implements the jet, a n-dimensional dual number.
 ///
@@ -53,7 +53,7 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
     ///
     /// This function panics if the implementation for `Infinitesimal` does no support the
     /// dimension count.
-    pub fn constant(real: N, dim: usize) -> Self {
+    pub fn constant(real: N, dim: Dim) -> Self {
         Self {
             real,
             infinitesimal: I::zeros(dim),
@@ -71,7 +71,7 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
     /// This function panics if
     /// - the given index is equal to or greater than the dimension count or
     /// - the implementation for `Infinitesimal` does not support the dimension count.
-    pub fn variable(real: N, idx: usize, dim: usize) -> Self {
+    pub fn variable(real: N, idx: usize, dim: Dim) -> Self {
         Self {
             real,
             infinitesimal: I::one(idx, dim),
@@ -316,7 +316,7 @@ mod tests {
     use num_rational::BigRational;
     use num_traits::{Inv, One, Zero};
 
-    use crate::{DenseInfinitesimal, Infinitesimal, Jet};
+    use crate::{DenseInfinitesimal, Dim, Infinitesimal, Jet};
 
     type TestInfinitesimal = DenseInfinitesimal<BigRational>;
 
@@ -337,14 +337,6 @@ mod tests {
         TestJet::new(real_part, infinitesimal(infinitesimal_part))
     }
 
-    fn dim_die() -> impl Die<usize> {
-        dice::from_fn(|mut fate| {
-            let scaled_limit = fate.limit().0 / 3;
-            let mut scaled_fate = fate.with_limit(scaled_limit.into());
-            scaled_fate.roll(dice::length(..))
-        })
-    }
-
     fn number_die() -> impl Die<BigRational> {
         crate::dice::big_rational_number()
     }
@@ -353,11 +345,11 @@ mod tests {
         crate::dice::big_rational_non_zero_number()
     }
 
-    fn jet_die(dim: usize) -> impl Die<TestJet> {
+    fn jet_die(dim: Dim) -> impl Die<TestJet> {
         crate::dice::jet(dim, number_die(), number_die())
     }
 
-    fn non_zero_jet_die(dim: usize) -> impl Die<TestJet> {
+    fn non_zero_jet_die(dim: Dim) -> impl Die<TestJet> {
         crate::dice::jet(dim, non_zero_number_die(), number_die())
     }
 
@@ -485,7 +477,7 @@ mod tests {
     #[test]
     fn commutative_ring() {
         Dicetest::repeatedly().run(|mut fate| {
-            let dim = fate.roll(dim_die());
+            let dim = fate.roll(crate::dice::dim());
 
             let set = Set::new("Jet", jet_die(dim));
             let vars = fate.roll(set.vars(["x", "y", "z"]));
@@ -502,7 +494,7 @@ mod tests {
     #[test]
     fn add_real_is_equal_to_add_with_constant() {
         Dicetest::repeatedly().run(|mut fate| {
-            let dim = fate.roll(dim_die());
+            let dim = fate.roll(crate::dice::dim());
 
             let x = fate.roll(jet_die(dim));
             let a = fate.roll(number_die());
@@ -517,7 +509,7 @@ mod tests {
     #[test]
     fn sub_is_equal_to_add_with_neg() {
         Dicetest::repeatedly().run(|mut fate| {
-            let dim = fate.roll(dim_die());
+            let dim = fate.roll(crate::dice::dim());
 
             let [x, y] = fate.roll(dice::array(jet_die(dim)));
 
@@ -528,7 +520,7 @@ mod tests {
     #[test]
     fn sub_real_is_equal_to_sub_with_constant() {
         Dicetest::repeatedly().run(|mut fate| {
-            let dim = fate.roll(dim_die());
+            let dim = fate.roll(crate::dice::dim());
 
             let x = fate.roll(jet_die(dim));
             let a = fate.roll(number_die());
@@ -543,7 +535,7 @@ mod tests {
     #[test]
     fn mul_real_is_equal_to_mul_with_constant() {
         Dicetest::repeatedly().run(|mut fate| {
-            let dim = fate.roll(dim_die());
+            let dim = fate.roll(crate::dice::dim());
 
             let x = fate.roll(jet_die(dim));
             let a = fate.roll(number_die());
@@ -558,7 +550,7 @@ mod tests {
     #[test]
     fn div_is_right_inverse_of_mul() {
         Dicetest::repeatedly().run(|mut fate| {
-            let dim = fate.roll(dim_die());
+            let dim = fate.roll(crate::dice::dim());
 
             let x = fate.roll(jet_die(dim));
             let y = fate.roll(non_zero_jet_die(dim));
@@ -572,7 +564,7 @@ mod tests {
     #[test]
     fn div_real_is_equal_to_div_with_constant() {
         Dicetest::repeatedly().run(|mut fate| {
-            let dim = fate.roll(dim_die());
+            let dim = fate.roll(crate::dice::dim());
 
             let x = fate.roll(jet_die(dim));
             let a = fate.roll(non_zero_number_die());
@@ -587,7 +579,7 @@ mod tests {
     #[test]
     fn checked_div_real_is_equal_to_checked_div_with_constant() {
         Dicetest::repeatedly().run(|mut fate| {
-            let dim = fate.roll(dim_die());
+            let dim = fate.roll(crate::dice::dim());
 
             let x = fate.roll(jet_die(dim));
             let a = fate.roll(number_die());
@@ -602,7 +594,7 @@ mod tests {
     #[test]
     fn div_is_equal_to_mul_with_inv() {
         Dicetest::repeatedly().run(|mut fate| {
-            let dim = fate.roll(dim_die());
+            let dim = fate.roll(crate::dice::dim());
 
             let x = fate.roll(jet_die(dim));
             let y = fate.roll(non_zero_jet_die(dim));
