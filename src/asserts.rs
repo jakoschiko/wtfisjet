@@ -23,7 +23,7 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
         let dim = fate.roll(&dim_die);
         hint!("dim = {:?}", dim);
 
-        let valid_idx_die = if dim.0 == 0 { None } else { Some(dice::uni_usize(..dim.0)) };
+        let valid_idx_die = if dim.0 == 0 { None } else { Some(dice::uni_usize(dim.indices())) };
         let infinitesimal_die = any_infinitesimal::<_, I, _>(dim, &number_die);
         let infinitesimal = fate.roll(&infinitesimal_die);
 
@@ -39,7 +39,7 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
             let infinitesimal_dim = infinitesimal.dim();
             assert_eq!(infinitesimal_dim, dim, "Result of `I::zeros` has wrong dimension {}", infinitesimal_dim.0);
 
-            for idx in 0..dim.0 {
+            for idx in dim.indices() {
                 let elem = infinitesimal.elem(idx);
                 assert!(elem.is_zero(), "The element of `I::zeros` with index {idx} must be zero, but is {elem:?}");
             }
@@ -57,7 +57,7 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
                 let infinitesimal_dim = infinitesimal.dim();
                 assert_eq!(infinitesimal_dim, dim, "Result of `I::one` has wrong dimension {}", infinitesimal_dim.0);
 
-                for idx in 0..dim.0 {
+                for idx in dim.indices() {
                     let elem = infinitesimal.elem(idx);
 
                     if idx == one_idx {
@@ -80,7 +80,7 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
             let infinitesimal_dim = infinitesimal.dim();
             assert_eq!(infinitesimal_dim, dim, "Result of `I::from_dense` has wrong dimension {}", infinitesimal_dim.0);
 
-            for idx in 0..dim.0 {
+            for idx in dim.indices() {
                 let elem = infinitesimal.elem(idx);
                 let expected = &numbers[idx];
 
@@ -109,7 +109,7 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
                 let infinitesimal_dim = infinitesimal.dim();
                 assert_eq!(infinitesimal_dim, dim, "Result of `I::from_sparse` has wrong dimension {}", infinitesimal_dim.0);
 
-                for idx in 0..dim.0 {
+                for idx in dim.indices() {
                     let elem = infinitesimal.elem(idx);
 
                     if let Some(expected) = spare_numbers_map.get(&idx) {
@@ -130,7 +130,7 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
             let dense_elems_len = dense_elems.len();
             assert_eq!(dense_elems_len, dim.0, "Result of `I::dense_elems` has wrong length {dense_elems_len}");
 
-            for idx in 0..dim.0 {
+            for idx in dim.indices() {
                 let elem = &dense_elems[idx];
                 let expected = infinitesimal.elem(idx);
 
@@ -161,7 +161,7 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
 
             let mut expected_indices = BTreeSet::new();
 
-            for idx in 0..dim.0 {
+            for idx in dim.indices() {
                 if !infinitesimal.elem(idx).is_zero() {
                     expected_indices.insert(idx);
                 }

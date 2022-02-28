@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 /// The dimension count of the infinitesimal part of a [`Jet`].
 ///
 /// Usually the dimension count is given by the number of variables for which you want
@@ -10,3 +12,10 @@
 /// [`Jet`]: crate::Jet
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Dim(pub usize);
+
+impl Dim {
+    /// Returns a range that contains all dimension indices in ascending order.
+    pub fn indices(self) -> Range<usize> {
+        0..self.0
+    }
+}

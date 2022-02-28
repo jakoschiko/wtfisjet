@@ -60,7 +60,7 @@ pub fn infinitesimal_one<N: Number, I: Infinitesimal<N>>(dim: Dim) -> impl Die<I
     );
 
     dice::from_fn(move |mut fate| {
-        let idx = fate.roll(dice::uni_usize(0..dim.0));
+        let idx = fate.roll(dice::uni_usize(dim.indices()));
         I::one(idx, dim)
     })
 }
@@ -91,7 +91,7 @@ pub fn infinitesimal<N: Number, I: Infinitesimal<N>, NDI: Die<N>>(
                 I::zeros(Dim(0))
             } else {
                 let number_with_index_die =
-                    dice::zip().two(dice::uni_usize(0..dim.0), &infinitesimal_number_die);
+                    dice::zip().two(dice::uni_usize(dim.indices()), &infinitesimal_number_die);
                 let elems = fate.roll(dice::vec(number_with_index_die, 0..=dim.0));
                 I::from_sparse(elems, dim)
             }
@@ -135,7 +135,7 @@ pub fn jet_variable<N: Number, I: Infinitesimal<N>, NDR: Die<N>>(
 
     dice::from_fn(move |mut fate| {
         let real = fate.roll(&real_number_die);
-        let idx = fate.roll(dice::uni_usize(0..dim.0));
+        let idx = fate.roll(dice::uni_usize(dim.indices()));
         Jet::variable(real, idx, dim)
     })
 }
