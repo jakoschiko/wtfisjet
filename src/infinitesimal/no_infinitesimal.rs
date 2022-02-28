@@ -13,7 +13,7 @@ use crate::{Dim, Infinitesimal, Number};
 ///
 /// This implementation supports only the dimension count zero. Any attempt to
 /// create an instance with greater dimension count will cause panic.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NoInfinitesimal;
 
 impl<N: Number> Infinitesimal<N> for NoInfinitesimal {

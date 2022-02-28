@@ -31,7 +31,7 @@ use crate::{Dim, Infinitesimal, Number};
 /// - Continuously differentiable functions are very nice for algorithms like Newton's method.
 /// Unfortunately you can easily lose this property, e.g. by using if/else.
 /// - There is no obvious order for jets.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Jet<N: Number, I: Infinitesimal<N>> {
     /// The real part of the jet.
     pub real: N,

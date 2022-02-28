@@ -13,7 +13,7 @@ use crate::{Dim, Infinitesimal, Number};
 /// This implementation only allows to create instances with a dimension count that matches the
 /// const parameter `D`. Any attempt to create an instance with another dimension count
 /// will cause panic.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ConstInfinitesimal<N: Number, const D: usize> {
     elems: [N; D],
 }

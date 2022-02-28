@@ -5,7 +5,7 @@ use crate::{Dim, Infinitesimal, Number};
 /// # Supported dimension count
 ///
 /// There are no constraints regarding the dimension count.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DenseInfinitesimal<N: Number> {
     elems: Vec<N>,
 }

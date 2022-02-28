@@ -8,7 +8,7 @@ use crate::{Dim, Infinitesimal, Number};
 ///
 /// Because of the limitations of the underlying data structure, the dimension count must fit
 /// into `u64`. Any attempt to create an instance with greater dimension count will cause panic.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SparseInfinitesimal<N: Number> {
     cast_dim: u64, // Necessary because elems contains only non-zero elements
     zero: N,       // Necessary for functions that return `&N`
