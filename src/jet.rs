@@ -1,7 +1,10 @@
 #![allow(clippy::should_implement_trait)]
 
 use num_traits::Inv;
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::{
+    fmt::Display,
+    ops::{Add, Div, Mul, Neg, Sub},
+};
 
 // TODO: Impl assign operators
 
@@ -309,6 +312,23 @@ impl<N: Number, I: Infinitesimal<N>> Inv for Jet<N, I> {
     }
 }
 
+impl<N: Number + Display, I: Infinitesimal<N>> Display for Jet<N, I> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({} + [", self.real)?;
+
+        let dim = self.infinitesimal.dim();
+        for (idx, elem) in self.infinitesimal.dense_elems().enumerate() {
+            if idx + 1 < dim.0 {
+                write!(f, "{}, ", elem)?;
+            } else {
+                write!(f, "{}", elem)?;
+            }
+        }
+
+        write!(f, "]h)")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use diceprop::{props, Elem, Fun1, Fun2, Set};
@@ -472,6 +492,37 @@ mod tests {
             let x = jet(rational(0, 1), [rational(3, 1), rational(0, 1)]);
             assert_eq!(Jet::checked_inv(x), None);
         }
+    }
+
+    #[test]
+    fn display_examples() {
+        type MyJet = Jet<f32, DenseInfinitesimal<f32>>;
+
+        assert_eq!(
+            "(2.4 + []h)",
+            format!("{}", MyJet::new(2.4, DenseInfinitesimal::from_dense([]))),
+        );
+
+        assert_eq!(
+            "(-0.2 + [4]h)",
+            format!("{}", MyJet::new(-0.2, DenseInfinitesimal::from_dense([4.]))),
+        );
+
+        assert_eq!(
+            "(10 + [0, -0.1]h)",
+            format!(
+                "{}",
+                MyJet::new(10., DenseInfinitesimal::from_dense([0., -0.1]))
+            ),
+        );
+
+        assert_eq!(
+            "(0 + [-1, 0.5, 0]h)",
+            format!(
+                "{}",
+                MyJet::new(0., DenseInfinitesimal::from_dense([-1., 0.5, 0.]))
+            ),
+        );
     }
 
     #[test]
