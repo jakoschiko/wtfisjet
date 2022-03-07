@@ -83,6 +83,9 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
 
     /// Adds both jets together.
     pub fn add(self, rhs: Self) -> Self {
+        // f(x) = g(x) + h(x)
+        // f'(x) = g'(x) + h'(x) [sum rule]
+
         Self {
             real: self.real + rhs.real,
             infinitesimal: self.infinitesimal.add(rhs.infinitesimal),
@@ -91,6 +94,9 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
 
     /// Adds the real number to the jet.
     pub fn add_real(self, rhs: N) -> Self {
+        // f(x) = g(x) + a
+        // f'(x) = g'(x) [sum rule + constant rule]
+
         Self {
             real: self.real + rhs,
             infinitesimal: self.infinitesimal,
@@ -99,6 +105,9 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
 
     /// Subtracts the right jet from the left jet.
     pub fn sub(self, rhs: Self) -> Self {
+        // f(x) = g(x) - h(x)
+        // f'(x) = g'(x) - h'(x) [sum rule + factor rule]
+
         Self {
             real: self.real - rhs.real,
             infinitesimal: self.infinitesimal.sub(rhs.infinitesimal),
@@ -107,6 +116,9 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
 
     /// Subtracts the real number from the jet.
     pub fn sub_real(self, rhs: N) -> Self {
+        // f(x) = g(x) - a
+        // f'(x) = g'(x) [sum rule + constant rule]
+
         Self {
             real: self.real - rhs,
             infinitesimal: self.infinitesimal,
@@ -115,6 +127,9 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
 
     /// Negates the jet.
     pub fn neg(self) -> Self {
+        // f(x) = -g(x)
+        // f'(x) = -g'(x) [factor rule]
+
         Self {
             real: -self.real,
             infinitesimal: self.infinitesimal.neg(),
@@ -123,6 +138,9 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
 
     /// Multiplies both jets.
     pub fn mul(self, rhs: Self) -> Self {
+        // f(x) = g(x) + h(x)
+        // f'(x) = g'(x) * h(x) + g(x) * h'(x) [product rule]
+
         let infinitesimal = self
             .infinitesimal
             .scale(rhs.real.clone())
@@ -136,6 +154,9 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
 
     /// Multiplies the real number with the jet.
     pub fn mul_real(self, rhs: N) -> Self {
+        // f(x) = a * g(x)
+        // f'(x) = a * g'(x) [factor rule]
+
         let infinitesimal = self.infinitesimal.scale(rhs.clone());
 
         Self {
@@ -150,6 +171,9 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
     /// part is non-zero. I.e. there are multiple jets without an inverse. Therefore jets do
     /// **not** fulfill the properties of a mathematical field.
     pub fn div(self, rhs: Self) -> Self {
+        // f(x) = g(x) / g(x)
+        // f'(x) = (g'(x) * h(x) - g(x) * h'(x)) / h(v)^2 [quotient rule]
+
         let lhs_inv = rhs.real.inv();
         let real = self.real * lhs_inv.clone();
         let infinitesimal = self
@@ -167,6 +191,9 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
     ///
     /// The real number is not invertible if it is zero.
     pub fn div_real(self, rhs: N) -> Self {
+        // f(x) = g(x) / a
+        // f'(x) = g'(x) / a [factor rule]
+
         let lhs_inv = rhs.inv();
         let real = self.real * lhs_inv.clone();
         let infinitesimal = self.infinitesimal.scale(lhs_inv);
@@ -209,6 +236,10 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
     /// part is non-zero. I.e. there are multiple jets without an inverse. Therefore jets do
     /// **not** fulfill the properties of a mathematical field.
     pub fn inv(self) -> Self {
+        // Power rule:
+        // f(x) = 1 / g(x)
+        // f'(x) = -1 / g'(x)^2 [power rule]
+
         let inv = self.real.inv();
         let infinitesimal = self.infinitesimal.scale(-inv.clone() * inv.clone());
 
@@ -228,6 +259,30 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
             None
         } else {
             Some(self.inv())
+        }
+    }
+
+    /// Returns the square of the jet.
+    pub fn square(self) -> Self {
+        // f(x) = g(x)^2
+        // f'(x) = 2 * g'(x) [power rule]
+
+        Self {
+            real: self.real.clone() * self.real.clone(),
+            infinitesimal: self.infinitesimal.scale(self.real * N::two()),
+        }
+    }
+
+    /// Returns the cube of the jet.
+    pub fn cube(self) -> Self {
+        // f(x) = g(x)^3
+        // f'(x) = 3 * g'(x)^2 [power rule]
+
+        let square = self.real.clone() * self.real.clone();
+
+        Self {
+            real: self.real * square.clone(),
+            infinitesimal: self.infinitesimal.scale(square * N::three()),
         }
     }
 }
@@ -495,6 +550,34 @@ mod tests {
     }
 
     #[test]
+    fn square_examples() {
+        {
+            let x = jet(rational(2, 1), [rational(3, 1), rational(0, 1)]);
+            let y = jet(rational(4, 1), [rational(12, 1), rational(0, 1)]);
+            assert_eq!(Jet::square(x), y);
+        }
+        {
+            let x = jet(rational(0, 1), [rational(3, 1), rational(0, 1)]);
+            let y = jet(rational(0, 1), [rational(0, 1), rational(0, 1)]);
+            assert_eq!(Jet::square(x), y);
+        }
+    }
+
+    #[test]
+    fn cube_examples() {
+        {
+            let x = jet(rational(2, 1), [rational(3, 1), rational(0, 1)]);
+            let y = jet(rational(8, 1), [rational(36, 1), rational(0, 1)]);
+            assert_eq!(Jet::cube(x), y);
+        }
+        {
+            let x = jet(rational(0, 1), [rational(3, 1), rational(0, 1)]);
+            let y = jet(rational(0, 1), [rational(0, 1), rational(0, 1)]);
+            assert_eq!(Jet::cube(x), y);
+        }
+    }
+
+    #[test]
     fn display_examples() {
         type MyJet = Jet<f32, DenseInfinitesimal<f32>>;
 
@@ -651,6 +734,31 @@ mod tests {
             let y = fate.roll(non_zero_jet_die(dim));
 
             assert_eq!(Jet::div(x.clone(), y.clone()), Jet::mul(x, Jet::inv(y)));
+        });
+    }
+
+    #[test]
+    fn square_is_equal_to_mul() {
+        Dicetest::repeatedly().run(|mut fate| {
+            let dim = fate.roll(crate::dice::dim());
+
+            let x = fate.roll(jet_die(dim));
+
+            assert_eq!(Jet::square(x.clone()), Jet::mul(x.clone(), x));
+        });
+    }
+
+    #[test]
+    fn cube_is_equal_to_mul() {
+        Dicetest::repeatedly().run(|mut fate| {
+            let dim = fate.roll(crate::dice::dim());
+
+            let x = fate.roll(jet_die(dim));
+
+            assert_eq!(
+                Jet::cube(x.clone()),
+                Jet::mul(Jet::mul(x.clone(), x.clone()), x)
+            );
         });
     }
 }

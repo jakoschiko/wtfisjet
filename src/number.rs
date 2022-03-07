@@ -21,11 +21,25 @@ pub trait Number:
     + Clone
     + PartialOrd
 {
+    fn two() -> Self;
+
+    fn three() -> Self;
+
     /// Same as [`Neg::neg`](std::ops::Neg::neg), but in place.
     fn neg_in_place(&mut self);
 }
 
 impl Number for f32 {
+    #[inline]
+    fn two() -> Self {
+        2.0
+    }
+
+    #[inline]
+    fn three() -> Self {
+        3.0
+    }
+
     #[inline]
     fn neg_in_place(&mut self) {
         *self = -*self;
@@ -34,6 +48,16 @@ impl Number for f32 {
 
 impl Number for f64 {
     #[inline]
+    fn two() -> Self {
+        2.0
+    }
+
+    #[inline]
+    fn three() -> Self {
+        3.0
+    }
+
+    #[inline]
     fn neg_in_place(&mut self) {
         *self = -*self;
     }
@@ -41,6 +65,14 @@ impl Number for f64 {
 
 #[cfg(any(test, feature = "big-rational-number"))]
 impl Number for num_rational::BigRational {
+    fn two() -> Self {
+        Self::from_integer(2.into())
+    }
+
+    fn three() -> Self {
+        Self::from_integer(3.into())
+    }
+
     fn neg_in_place(&mut self) {
         use num_traits::Zero;
 
