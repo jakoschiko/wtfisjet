@@ -16,6 +16,7 @@ use std::ops::Neg;
 pub trait Number:
     num_traits::NumAssign
     + num_traits::Inv<Output = Self>
+    + num_traits::Signed
     + Neg<Output = Self>
     + Debug
     + Clone

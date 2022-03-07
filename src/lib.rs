@@ -66,3 +66,6 @@ pub mod dice;
 
 #[cfg(any(test, feature = "asserts"))]
 pub mod asserts;
+
+#[cfg(test)]
+mod test_util;

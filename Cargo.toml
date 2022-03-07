@@ -19,6 +19,7 @@ intmap = "0.7.1"
 array-init = "2.0.0"
 dicetest = "0.3.1"
 diceprop = "0.2.0"
+float_eq = "0.7.0"
 
 [features]
 default = []

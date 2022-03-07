@@ -1,6 +1,6 @@
 #![allow(clippy::should_implement_trait)]
 
-use num_traits::Inv;
+use num_traits::{Float, Inv};
 use std::{
     fmt::Display,
     ops::{Add, Div, Mul, Neg, Sub},
@@ -165,11 +165,12 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
         }
     }
 
-    /// Divides the left jet by the right jet if the right jet is invertible.
+    /// Divides the left jet by the right jet.
     ///
-    /// The right jet is not invertible if its **real part** is zero even if its infinitesimal
-    /// part is non-zero. I.e. there are multiple jets without an inverse. Therefore jets do
-    /// **not** fulfill the properties of a mathematical field.
+    /// The result is undefined if the right jet is not invertible. The right jet is not
+    /// invertible if its **real part** is zero even if its infinitesimal part is non-zero.
+    /// I.e. there are multiple jets without an inverse. Therefore jets do **not** fulfill
+    /// the properties of a mathematical field.
     pub fn div(self, rhs: Self) -> Self {
         // f(x) = g(x) / g(x)
         // f'(x) = (g'(x) * h(x) - g(x) * h'(x)) / h(v)^2 [quotient rule]
@@ -187,9 +188,10 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
         }
     }
 
-    /// Divides the jet by the real number if the real number is invertible.
+    /// Divides the jet by the real number.
     ///
-    /// The real number is not invertible if it is zero.
+    /// The result is undefined if the real number is not invertible. The real number is not
+    /// invertible if it is zero.
     pub fn div_real(self, rhs: N) -> Self {
         // f(x) = g(x) / a
         // f'(x) = g'(x) / a [factor rule]
@@ -230,11 +232,12 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
         }
     }
 
-    /// Returns the inverse of the jet if it is invertible.
+    /// Returns the inverse of the jet.
     ///
-    /// The jet is not invertible if its **real part** is zero even if its infinitesimal
-    /// part is non-zero. I.e. there are multiple jets without an inverse. Therefore jets do
-    /// **not** fulfill the properties of a mathematical field.
+    /// The result is undefined if the jet is not invertible. The jet is not invertible if its
+    /// **real part** is zero even if its infinitesimal part is non-zero. I.e. there are multiple
+    /// jets without an inverse. Therefore jets do **not** fulfill the properties of a mathematical
+    /// field.
     pub fn inv(self) -> Self {
         // Power rule:
         // f(x) = 1 / g(x)
@@ -283,6 +286,34 @@ impl<N: Number, I: Infinitesimal<N>> Jet<N, I> {
         Self {
             real: self.real * square.clone(),
             infinitesimal: self.infinitesimal.scale(square * N::three()),
+        }
+    }
+}
+
+impl<N: Number + Float, I: Infinitesimal<N>> Jet<N, I> {
+    /// Returns the square root of the jet.
+    ///
+    /// The result is undefined if the real part of the jet is zero or negative.
+    pub fn square_root(self) -> Self {
+        // f(x) = g(x)^(1/2)
+        // f'(x) = 1 / (2 * g'()^(1/2)) [power rule]
+
+        let root = self.real.sqrt();
+
+        Self {
+            real: root,
+            infinitesimal: self.infinitesimal.scale((N::two() * root).inv()),
+        }
+    }
+
+    /// Returns the square root of the jet if it's defined or returns `None` otherwise.
+    ///
+    /// The square root is undefined if the real part of the jet is zero or negative.
+    pub fn checked_square_root(self) -> Option<Self> {
+        if self.real.is_zero() || self.real.is_negative() {
+            None
+        } else {
+            Some(self.square_root())
         }
     }
 }
@@ -390,8 +421,9 @@ mod tests {
     use dicetest::prelude::*;
     use num_rational::BigRational;
     use num_traits::{Inv, One, Zero};
+    use std::f64::consts::SQRT_2;
 
-    use crate::{DenseInfinitesimal, Dim, Infinitesimal, Jet};
+    use crate::{test_util::assert_jet_eq, DenseInfinitesimal, Dim, Infinitesimal, Jet, Number};
 
     type TestInfinitesimal = DenseInfinitesimal<BigRational>;
 
@@ -401,15 +433,14 @@ mod tests {
         BigRational::new(num.into(), denom.into())
     }
 
-    fn infinitesimal<const D: usize>(elems: [BigRational; D]) -> TestInfinitesimal {
-        TestInfinitesimal::from_dense(elems)
-    }
-
-    fn jet<const D: usize>(
-        real_part: BigRational,
-        infinitesimal_part: [BigRational; D],
-    ) -> TestJet {
-        TestJet::new(real_part, infinitesimal(infinitesimal_part))
+    fn jet<N: Number, const D: usize>(
+        real_part: N,
+        infinitesimal_part: [N; D],
+    ) -> Jet<N, DenseInfinitesimal<N>> {
+        Jet::new(
+            real_part,
+            DenseInfinitesimal::from_dense(infinitesimal_part),
+        )
     }
 
     fn number_die() -> impl Die<BigRational> {
@@ -574,6 +605,32 @@ mod tests {
             let x = jet(rational(0, 1), [rational(3, 1), rational(0, 1)]);
             let y = jet(rational(0, 1), [rational(0, 1), rational(0, 1)]);
             assert_eq!(Jet::cube(x), y);
+        }
+    }
+
+    #[test]
+    fn square_root_examples() {
+        {
+            let x = jet(2.0_f64, [3.0, 0.0]);
+            let y = jet(SQRT_2, [3.0 / (2.0 * SQRT_2), 0.0]);
+            assert_jet_eq(Jet::square_root(x), y, 1e-10);
+        }
+    }
+
+    #[test]
+    fn checked_square_root_examples() {
+        {
+            let x = jet(2.0_f64, [3.0, 0.0]);
+            let y = jet(SQRT_2, [3.0 / (2.0 * SQRT_2), 0.0]);
+            assert_jet_eq(Jet::checked_square_root(x).unwrap(), y, 1e-10);
+        }
+        {
+            let x = jet(0.0_f64, [3.0, 0.0]);
+            assert_eq!(Jet::checked_square_root(x), None);
+        }
+        {
+            let x = jet(-2.0_f64, [3.0, 0.0]);
+            assert_eq!(Jet::checked_square_root(x), None);
         }
     }
 
