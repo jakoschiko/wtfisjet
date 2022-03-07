@@ -316,6 +316,38 @@ impl<N: Number + Float, I: Infinitesimal<N>> Jet<N, I> {
             Some(self.square_root())
         }
     }
+
+    /// Raises the jet to a real number power if the result if defined.
+    ///
+    /// Depending on the power and real part of the jet, the result might be undefined,
+    /// so use this function with care!
+    pub fn pow_real(self, power: N) -> Self {
+        // f(x) = g(x)^n
+        // f'(x) = n * g'(x)^(n - 1) [power rule]
+
+        let temp = power * self.real.powf(power - N::one());
+
+        Self {
+            real: self.real.powf(power),
+            infinitesimal: self.infinitesimal.scale(temp),
+        }
+    }
+
+    /// Raises the jet to a integer power.
+    ///
+    /// Depending on the power and real part of the jet, the result might be undefined,
+    /// so use this function with care!
+    pub fn pow_int(self, power: i32) -> Self {
+        // f(x) = g(x)^n
+        // f'(x) = n * g'(x)^(n - 1) [power rule]
+
+        let temp = N::from(power).unwrap() * self.real.powi(power - 1);
+
+        Self {
+            real: self.real.powi(power),
+            infinitesimal: self.infinitesimal.scale(temp),
+        }
+    }
 }
 
 impl<N: Number, I: Infinitesimal<N>> Add<Self> for Jet<N, I> {
@@ -631,6 +663,69 @@ mod tests {
         {
             let x = jet(-2.0_f64, [3.0, 0.0]);
             assert_eq!(Jet::checked_square_root(x), None);
+        }
+    }
+
+    #[test]
+    fn pow_real_examples() {
+        {
+            let x = jet(2.0_f64, [3.0, 0.0]);
+            let y = Jet::square(x.clone());
+            assert_jet_eq(Jet::pow_real(x, 2.0), y, 1e-10);
+        }
+        {
+            let x = jet(0.0_f64, [3.0, 0.0]);
+            let y = jet(0.0_f64, [0.0, 0.0]);
+            assert_jet_eq(Jet::pow_real(x, 2.0), y, 1e-10);
+        }
+        {
+            let x = jet(2.0_f64, [3.0, 0.0]);
+            let y = x.clone();
+            assert_jet_eq(Jet::pow_real(x, 1.0), y, 1e-10);
+        }
+        {
+            let x = jet(0.5_f64, [3.0, 0.0]);
+            let y = Jet::square_root(x.clone());
+            assert_jet_eq(Jet::pow_real(x, 0.5), y, 1e-10);
+        }
+        {
+            let x = jet(0.5_f64, [3.0, 0.0]);
+            let y = jet(1.0_f64, [0.0, 0.0]);
+            assert_jet_eq(Jet::pow_real(x, 0.0), y, 1e-10);
+        }
+        {
+            let x = jet(0.5_f64, [3.0, 0.0]);
+            let y = Jet::inv(x.clone());
+            assert_jet_eq(Jet::pow_real(x, -1.0), y, 1e-10);
+        }
+    }
+
+    #[test]
+    fn pow_int_examples() {
+        {
+            let x = jet(2.0_f64, [3.0, 0.0]);
+            let y = Jet::square(x.clone());
+            assert_jet_eq(Jet::pow_int(x, 2), y, 1e-10);
+        }
+        {
+            let x = jet(0.0_f64, [3.0, 0.0]);
+            let y = jet(0.0_f64, [0.0, 0.0]);
+            assert_jet_eq(Jet::pow_int(x, 2), y, 1e-10);
+        }
+        {
+            let x = jet(2.0_f64, [3.0, 0.0]);
+            let y = x.clone();
+            assert_jet_eq(Jet::pow_int(x, 1), y, 1e-10);
+        }
+        {
+            let x = jet(0.5_f64, [3.0, 0.0]);
+            let y = jet(1.0_f64, [0.0, 0.0]);
+            assert_jet_eq(Jet::pow_int(x, 0), y, 1e-10);
+        }
+        {
+            let x = jet(0.5_f64, [3.0, 0.0]);
+            let y = Jet::inv(x.clone());
+            assert_jet_eq(Jet::pow_int(x, -1), y, 1e-10);
         }
     }
 
