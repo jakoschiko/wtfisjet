@@ -26,6 +26,8 @@ pub trait Number:
 
     fn three() -> Self;
 
+    fn from_integer(integer: i32) -> Self;
+
     /// Same as [`Neg::neg`](std::ops::Neg::neg), but in place.
     fn neg_in_place(&mut self);
 }
@@ -39,6 +41,11 @@ impl Number for f32 {
     #[inline]
     fn three() -> Self {
         3.0
+    }
+
+    #[inline]
+    fn from_integer(integer: i32) -> Self {
+        integer as Self
     }
 
     #[inline]
@@ -59,6 +66,11 @@ impl Number for f64 {
     }
 
     #[inline]
+    fn from_integer(integer: i32) -> Self {
+        integer as Self
+    }
+
+    #[inline]
     fn neg_in_place(&mut self) {
         *self = -*self;
     }
@@ -72,6 +84,10 @@ impl Number for num_rational::BigRational {
 
     fn three() -> Self {
         Self::from_integer(3.into())
+    }
+
+    fn from_integer(integer: i32) -> Self {
+        Self::from_integer(integer.into())
     }
 
     fn neg_in_place(&mut self) {
