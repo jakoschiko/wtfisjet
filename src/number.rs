@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::ops::Neg;
 
@@ -28,6 +29,14 @@ pub trait Number:
 
     fn from_integer(integer: i32) -> Self;
 
+    /// Compares both numbers using a total order.
+    ///
+    /// This function must be consistent with the number's [`PartialOrd`] implementation.
+    /// Unfortunately we can't require [`Ord`] because it's not implemented for the
+    /// floating point number types [`f32`] and [`f64`]. The usage of [`PartialOrd`] should
+    /// be preferred except you really need a total order.
+    fn total_cmp(&self, rhs: &Self) -> Ordering;
+
     /// Same as [`Neg::neg`](std::ops::Neg::neg), but in place.
     fn neg_in_place(&mut self);
 }
@@ -46,6 +55,11 @@ impl Number for f32 {
     #[inline]
     fn from_integer(integer: i32) -> Self {
         integer as Self
+    }
+
+    #[inline]
+    fn total_cmp(&self, rhs: &Self) -> Ordering {
+        f32::total_cmp(self, rhs)
     }
 
     #[inline]
@@ -71,6 +85,11 @@ impl Number for f64 {
     }
 
     #[inline]
+    fn total_cmp(&self, rhs: &Self) -> Ordering {
+        f64::total_cmp(self, rhs)
+    }
+
+    #[inline]
     fn neg_in_place(&mut self) {
         *self = -*self;
     }
@@ -88,6 +107,10 @@ impl Number for num_rational::BigRational {
 
     fn from_integer(integer: i32) -> Self {
         Self::from_integer(integer.into())
+    }
+
+    fn total_cmp(&self, rhs: &Self) -> Ordering {
+        Ord::cmp(self, rhs)
     }
 
     fn neg_in_place(&mut self) {

@@ -9,11 +9,18 @@ See the [ceres library] for more information.
 
 ## Nightly rust
 
-This crate uses the nightly feature `generic_associated_types`. Hence it's necessary to use
-the nightly rust compiler. Hopefully this won't be necessary anymore in the near future,
-see [The push for GATs stabilization].
+This crate uses some nightly features. Hence it's necessary to use the nightly rust compiler.
+Hopefully this won't be necessary anymore in the future.
+
+Nightly features used by this crate:
+- `generic_associated_types` is used for the inner [`Iterator`] types of [`Infinitesimal`].
+We can expect the stabilization in the near future, see [The push for GATs stabilization].
+- `total_cmp` allows us to use function like [`slice::binary_search_by`] for [`f32`] and
+[`f64`]. Although it's handy, this could also be solved with workarounds. See the
+[tracking issue for `total_cmp`].
 
 [The push for GATs stabilization]: https://blog.rust-lang.org/2021/08/03/GATs-stabilization-push.html
+[tracking issue for `total_cmp`]: https://github.com/rust-lang/rust/issues/72599
 
 ## Feature flags
 
