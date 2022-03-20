@@ -1,11 +1,11 @@
 # wtfisjet
 
-Provides an implementation for jets with some utilities.
+Provides an implementation for jets and some utilities.
 
-A jet is n-dimensional dual number that can be used for automatic derivation.
-See the [ceres library] for more information.
+## Status of this crate
 
-[ceres library]: http://ceres-solver.org/automatic_derivatives.html#dual-numbers-jets
+The author does not consider this crate as stable yet. However, it is well documented and
+tested, so give it a try!
 
 ## Nightly rust
 
@@ -21,6 +21,142 @@ We can expect the stabilization in the near future, see [The push for GATs stabi
 
 [The push for GATs stabilization]: https://blog.rust-lang.org/2021/08/03/GATs-stabilization-push.html
 [tracking issue for `total_cmp`]: https://github.com/rust-lang/rust/issues/72599
+
+## Features
+
+These features are available:
+
+- Implementation for jets that can be used for AD.
+- Multiple implementation for the infinitesimal part of the jet with different performance
+characteristics.
+- Many feature flags that allows to include only the features you need.
+
+## WTF is jet?
+
+A jet is a magic number. If you use jets for your calculation instead of ordinary numbers,
+you get not only the result but also the derivatives with respect to the inputs. This is
+called [automatic differentiation (AD)]. There are different ways of accomplishing AD,
+[dual numbers] are one of them and a jet is an n-dimensional dual number. The [ceres library]
+has a good explanation of how all of this works.
+
+[automatic differentiation (AD)]: https://en.wikipedia.org/wiki/Automatic_differentiation
+[dual numbers]: https://en.wikipedia.org/wiki/Dual_number
+[ceres library]: http://ceres-solver.org/automatic_derivatives.html#dual-numbers-jets
+
+This library implements jet with the struct [`Jet`]. The most important thing you need to know
+about [`Jet`] is that it consists of two parts:
+- The real part is the actual result.
+- The infinitesimal part is the magic part that calculates the derivatives. It's represented
+by the trait [`Infinitesimal`]. This crate provides different implementations with different
+performance characteristics.
+
+So, how can you use [`Jet`]? Instead of writing this:
+
+```rust
+fn foo(x: f32) -> f32 {
+    x * x - 1.0
+}
+
+let result = foo(2.0);
+println!("{}", result);
+// Output: 3
+```
+
+You write this:
+
+```rust
+use wtfisjet::{DenseInfinitesimal, Dim, Infinitesimal, Jet};
+
+fn foo<I: Infinitesimal<f32>>(x: Jet<f32, I>) -> Jet<f32, I> {
+    x.clone() * x - 1.0
+}
+
+type MyJet = Jet<f32, DenseInfinitesimal<f32>>;
+let dim = Dim(1);
+
+let result = foo(MyJet::variable(2.0, 0, dim));
+println!("{}", result);
+// Output: (3 + [4]h)
+//          ^    ^
+//          |    |
+//          |   derivative of foo with respect to x
+//          |
+//         result of foo
+```
+
+As mentioned before, jets are n-dimensional. That means you can calculate the derivatives with
+respect to multiple inputs:
+
+```rust
+use wtfisjet::{DenseInfinitesimal, Dim, Infinitesimal, Jet};
+
+fn bar<I: Infinitesimal<f32>>(x: Jet<f32, I>, y: Jet<f32, I>) -> Jet<f32, I> {
+    (x.clone() * x - 1.0) / y
+}
+
+type MyJet = Jet<f32, DenseInfinitesimal<f32>>;
+let dim = Dim(2); // Because we have now two variables, we need at least 2 dimensions
+
+let result = bar(
+    // The different variables uses different indices
+    MyJet::variable(2.0, 0, dim),
+    MyJet::variable(4.0, 1, dim),
+);
+println!("{}", result);
+// Output: (0.75 + [1, -0.1875]h)
+//          ^^^^    ^  ^^^^^^^
+//           |      |     |
+//           |      |    derivative of bar with respect to y
+//           |      |
+//           |     derivative of bar with respect to x
+//           |
+//         result of bar
+```
+
+Please note that functions `foo` and `bar` in the previous examples don't hide [`Jet`]
+behind a type parameter. Of course you could do this:
+
+```rust
+use std::ops::Mul;
+use wtfisjet::{DenseInfinitesimal, Dim, Infinitesimal, Jet};
+
+// Note: Not recommended!
+fn baz<N: Clone + Mul<Output=N>>(x: N) -> N {
+    x.clone() * x
+}
+
+type MyJet = Jet<f32, DenseInfinitesimal<f32>>;
+let dim = Dim(1);
+
+let result = baz(MyJet::variable(2.0, 0, dim));
+```
+
+However, this is not recommended. [`Jet`] has many pitfalls and it's helpful to see
+that your calculation is dealing with jets and not ordinary numbers. Additionally you can
+often improve the performance by using special functions that reduce the number of
+necessary [`Infinitesimal`] operations (e.g. you can use `x.square()` instead of
+`x.clone() * x`).
+
+If you're not interested in the derivatives but want to use a [`Jet`] based function,
+you can use [`NoInfinitesimal`]:
+
+```rust
+use wtfisjet::{Dim, Infinitesimal, Jet, NoInfinitesimal};
+
+fn foo<I: Infinitesimal<f32>>(x: Jet<f32, I>) -> Jet<f32, I> {
+    x.clone() * x - 1.0
+}
+
+type MyJet = Jet<f32, NoInfinitesimal>; // NoInfinitesimal is a zero sized type (ZST)
+let dim = Dim(0); // NoInfinitesimal requires zero dimensions
+
+let result = foo(MyJet::constant(2.0, dim)).real;
+println!("{}", result);
+// Output: 3
+```
+
+Assuming that Rust's zero-overhead principle is not a lie, this will be as fast as using
+a `f32` based function.
 
 ## Feature flags
 

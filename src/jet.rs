@@ -14,7 +14,8 @@ use crate::{Dim, Infinitesimal, Number};
 ///
 /// The jet consists of:
 /// - A real part that represents the result of a function.
-/// - An infinitesimal part that represents the exact derivative for each input of the function.
+/// - An infinitesimal part that represents the exact derivatives with respect to the inputs of
+/// the function.
 ///
 /// # Using a jet based function
 ///
