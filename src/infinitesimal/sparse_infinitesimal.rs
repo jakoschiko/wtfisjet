@@ -16,15 +16,9 @@ pub struct SparseInfinitesimal<N: Number> {
 }
 
 impl<N: Number> Infinitesimal<N> for SparseInfinitesimal<N> {
-    type DenseElems<'a>
-    where
-        N: 'a,
-    = SparseInfinitesimalDenseElems<'a, N>;
+    type DenseElems<'a> = SparseInfinitesimalDenseElems<'a, N> where N: 'a;
 
-    type SparseElems<'a>
-    where
-        N: 'a,
-    = SparseInfinitesimalSparseElems<'a, N>;
+    type SparseElems<'a> = SparseInfinitesimalSparseElems<'a, N> where N: 'a;
 
     fn dim(&self) -> Dim {
         // Should never fail because the original `dim` value was of type `usize`.

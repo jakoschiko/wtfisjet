@@ -11,15 +11,9 @@ pub struct DenseInfinitesimal<N: Number> {
 }
 
 impl<N: Number> Infinitesimal<N> for DenseInfinitesimal<N> {
-    type DenseElems<'a>
-    where
-        N: 'a,
-    = DenseInfinitesimalDenseElems<'a, N>;
+    type DenseElems<'a> = DenseInfinitesimalDenseElems<'a, N> where N: 'a;
 
-    type SparseElems<'a>
-    where
-        N: 'a,
-    = DenseInfinitesimalSparseElems<'a, N>;
+    type SparseElems<'a> = DenseInfinitesimalSparseElems<'a, N> where N: 'a;
 
     fn dim(&self) -> Dim {
         Dim(self.elems.len())

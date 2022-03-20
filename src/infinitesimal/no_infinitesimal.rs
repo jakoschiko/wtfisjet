@@ -17,15 +17,9 @@ use crate::{Dim, Infinitesimal, Number};
 pub struct NoInfinitesimal;
 
 impl<N: Number> Infinitesimal<N> for NoInfinitesimal {
-    type DenseElems<'a>
-    where
-        N: 'a,
-    = NoInfinitesimalDenseElems<'a, N>;
+    type DenseElems<'a> = NoInfinitesimalDenseElems<'a, N> where N: 'a;
 
-    type SparseElems<'a>
-    where
-        N: 'a,
-    = NoInfinitesimalSparseElems<'a, N>;
+    type SparseElems<'a> = NoInfinitesimalSparseElems<'a, N> where N: 'a;
 
     #[inline]
     fn dim(&self) -> Dim {

@@ -19,15 +19,9 @@ pub struct ConstInfinitesimal<N: Number, const D: usize> {
 }
 
 impl<N: Number, const D: usize> Infinitesimal<N> for ConstInfinitesimal<N, D> {
-    type DenseElems<'a>
-    where
-        N: 'a,
-    = ConstInfinitesimalDenseElems<'a, N>;
+    type DenseElems<'a>= ConstInfinitesimalDenseElems<'a, N> where N: 'a;
 
-    type SparseElems<'a>
-    where
-        N: 'a,
-    = ConstInfinitesimalSparseElems<'a, N>;
+    type SparseElems<'a> = ConstInfinitesimalSparseElems<'a, N> where N: 'a;
 
     fn dim(&self) -> Dim {
         Dim(D)
