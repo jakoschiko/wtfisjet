@@ -20,11 +20,13 @@ array-init = "2.0.0"
 dicetest = "0.3.1"
 diceprop = "0.2.0"
 float_eq = "0.7.0"
+poloto = "10.1.1"
 
 [features]
-default = []
+default = ["big-rational-number", "sparse-infinitesimal", "const-infinitesimal", "b-spline"]
 big-rational-number = ["num-rational"]
 sparse-infinitesimal = ["intmap"]
 const-infinitesimal = ["array-init"]
+b-spline = []
 dice = ["dicetest"]
 asserts = ["dicetest", "diceprop"]

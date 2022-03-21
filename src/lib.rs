@@ -30,6 +30,7 @@
 //! - Implementation for jets that can be used for AD.
 //! - Multiple implementation for the infinitesimal part of the jet with different performance
 //! characteristics.
+//! - Implementation for B-splines that uses jets as control points
 //! - Many feature flags that allows to include only the features you need.
 //!
 //! # WTF is jet?
@@ -163,21 +164,25 @@
 //!
 //! These feature flags can be used to customize the crate.
 //!
-//! ## `big-rational-number` (disabled by default)
+//! ## `big-rational-number` (enabled by default)
 //!
 //! If enabled, the type `num-rational::BigRational` will implement [`Number`].
 //! This is very useful for writing tests with arbitrary precision. It will
 //! require the dependency `num-rational`.
 //!
-//! ## `sparse-infinitesimal` (disabled by default)
+//! ## `sparse-infinitesimal` (enabled by default)
 //!
 //! If enabled, the type `wtfisjet::SparseInfinitesimal` is available. It will
 //! require the dependency `intmap`.
 //!
-//! ## `const-infinitesimal` (disabled by default)
+//! ## `const-infinitesimal` (enabled by default)
 //!
 //! If enabled, the type `wtfisjet::ConstInfinitesimal` is available. It will
 //! require the dependency `array-init`.
+//!
+//! ## `b-spline` (enabled by default)
+//!
+//! If enabled, the module `wtfisjet::bspline` is available.
 //!
 //! ## `dice` (disabled by default)
 //!
@@ -204,6 +209,9 @@ pub use infinitesimal::{DenseInfinitesimal, Infinitesimal, NoInfinitesimal};
 
 mod jet;
 pub use jet::Jet;
+
+#[cfg(any(test, feature = "b-spline"))]
+pub mod bspline;
 
 #[cfg(any(test, feature = "dice"))]
 pub mod dice;
