@@ -255,7 +255,7 @@ impl<'a, N: 'a + Number> Iterator for SparseInfinitesimalDenseElems<'a, N> {
         if self.cast_idx >= self.cast_dim {
             None
         } else {
-            let result = self.elems.get(self.cast_idx).unwrap_or(&self.zero);
+            let result = self.elems.get(self.cast_idx).unwrap_or(self.zero);
             self.cast_idx += 1;
             Some(result)
         }
