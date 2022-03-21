@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crate::{Dim, Number};
 
 /// The n-dimensional infinitesimal part of a [`Jet`] that represents the derivatives.
@@ -13,7 +15,7 @@ use crate::{Dim, Number};
 /// with zero dimension.
 ///
 /// [`Jet`]: crate::Jet
-pub trait Infinitesimal<N: Number>: Clone + PartialEq {
+pub trait Infinitesimal<N: Number>: Debug + Clone + PartialEq {
     /// Return type of [`Infinitesimal::dense_elems`].
     type DenseElems<'a>: Iterator<Item = &'a N>
     where
