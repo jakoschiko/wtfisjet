@@ -209,7 +209,7 @@ impl<N: Number, I: Infinitesimal<N>> BSplineCurve<N, I> {
         dim: Dim,
         bspline: BSpline<N>,
         control_points: Vec<Jet<N, I>>,
-    ) -> Result<BSplineCurve<N, I>, BSplineCurveError<N, I>> {
+    ) -> Result<Self, BSplineCurveError<N, I>> {
         if control_points.len() != bspline.necessary_control_point_count() {
             return Err(BSplineCurveError {
                 bspline,
@@ -217,9 +217,9 @@ impl<N: Number, I: Infinitesimal<N>> BSplineCurve<N, I> {
             });
         }
 
-        Ok(BSplineCurve {
-            bspline,
+        Ok(Self {
             dim,
+            bspline,
             control_points,
         })
     }
@@ -257,6 +257,80 @@ impl<N: Number, I: Infinitesimal<N>> BSplineCurve<N, I> {
             self.bspline.degree,
             &self.bspline.padded_knots,
             &self.control_points,
+            order,
+            x,
+            buffer,
+        )
+    }
+
+    /// Returns a [`BSplineCurveRef`] that uses the underlying data of self.
+    pub fn as_ref(&self) -> BSplineCurveRef<N, I> {
+        BSplineCurveRef {
+            dim: self.dim,
+            bspline: &self.bspline,
+            control_points: &self.control_points,
+        }
+    }
+}
+
+/// Same as [`BSplineCurve`] but it borrows it underlying data.
+#[derive(Debug, Clone)]
+pub struct BSplineCurveRef<'a, N: Number, I: Infinitesimal<N>> {
+    dim: Dim,
+    bspline: &'a BSpline<N>,
+    control_points: &'a [Jet<N, I>],
+}
+
+impl<'a, N: Number, I: Infinitesimal<N>> BSplineCurveRef<'a, N, I> {
+    /// Tries to create a B-spline curve.
+    ///
+    /// The number of control points must match the number returned by
+    /// [`BSpline::necessary_control_point_count`].
+    pub fn new(dim: Dim, bspline: &'a BSpline<N>, control_points: &'a [Jet<N, I>]) -> Option<Self> {
+        if control_points.len() != bspline.necessary_control_point_count() {
+            return None;
+        }
+
+        Some(Self {
+            bspline,
+            dim,
+            control_points,
+        })
+    }
+
+    /// Returns the B-Spline of this curve.
+    pub fn bspline(&self) -> &BSpline<N> {
+        self.bspline
+    }
+
+    /// Returns the control points of this curve.
+    pub fn control_points(&self) -> &[Jet<N, I>] {
+        self.control_points
+    }
+
+    /// Evaluates the curve for the given x-value.
+    pub fn value(&self, x: &N, buffer: &mut BSplineCurveBuffer<N, I>) -> Jet<N, I> {
+        calc_value(
+            self.bspline.degree,
+            &self.bspline.padded_knots,
+            self.control_points,
+            x,
+            buffer,
+        )
+    }
+
+    /// Evaluates the curve's derivative of the given order and for the given x-value.
+    pub fn derivative(
+        &self,
+        order: usize,
+        x: &N,
+        buffer: &mut BSplineCurveBuffer<N, I>,
+    ) -> Jet<N, I> {
+        calc_derivative(
+            self.dim,
+            self.bspline.degree,
+            &self.bspline.padded_knots,
+            self.control_points,
             order,
             x,
             buffer,
