@@ -148,149 +148,12 @@ impl<N: Number> BSpline<N> {
 
     /// Returns the number of knots that were used to create the B-spline.
     pub fn knot_count(&self) -> usize {
-        self.padded_knots.len() - 2 * self.degree
+        knot_count_without_padding(self.degree, &self.padded_knots)
     }
 
     /// The knots that were used to create the B-spline.
     pub fn knots(&self) -> &[N] {
-        &self.padded_knots[self.degree..self.padded_knots.len() - self.degree]
-    }
-
-    fn find_interval(&self, x: &N) -> usize {
-        let knots = self.knots();
-
-        // Calculate the knots between the intervals
-        let interval_knots = if self.degree == 0 {
-            // Because `degree` is at least 0, we know that we have at least 1 knot
-            debug_assert!(!knots.is_empty());
-
-            // `degree` 0 is asymmetrical and "right-heavy" and we are not allowed to
-            // omit the last knot, therefore omit only the first knot
-            &knots[1..]
-        } else {
-            // Because `degree` is at least 1, we know that we have at least 2 knots
-            debug_assert!(knots.len() >= 2);
-
-            // We omit the first and last knot
-            &knots[1..knots.len() - 1]
-        };
-
-        // Find the interval that contains `x`
-        let interval_knot_index = match interval_knots.binary_search_by(|k| N::total_cmp(k, x)) {
-            Ok(index) => index,
-            Err(index) => index,
-        };
-
-        interval_knot_index + self.degree
-    }
-
-    fn value<I: Infinitesimal<N>>(
-        &self,
-        control_points: &[Jet<N, I>],
-        buffer: &mut BSplineCurveBuffer<N, I>,
-        x: &N,
-    ) -> Jet<N, I> {
-        // The algorithm is inspired by https://en.wikipedia.org/wiki/De_Boor%27s_algorithm
-
-        // We assume that the number of control points correct because it was checked before
-        debug_assert_eq!(
-            control_points.len(),
-            necessary_control_point_count(self.degree, self.knot_count()),
-        );
-
-        let interval_index = self.find_interval(x);
-
-        let relevant_control_points = control_points[interval_index - self.degree..=interval_index]
-            .iter()
-            .cloned();
-
-        buffer.0.clear();
-        buffer.0.extend(relevant_control_points);
-
-        for step in 1..=self.degree {
-            for i in (step..=self.degree).rev() {
-                let left_knot_index = interval_index + i - self.degree;
-                let left_knot = &self.padded_knots[left_knot_index];
-
-                let right_knot_index = interval_index + 1 + i - step;
-                let right_knot = &self.padded_knots[right_knot_index];
-
-                let knot_diff = right_knot.clone() - left_knot.clone();
-
-                // `knot_diff` is non-zero because we assume that the knots are strictly increasing
-                // and at most one padding knot is used for the difference
-                debug_assert!(!knot_diff.is_zero());
-
-                let alpha = (x.clone() - left_knot.clone()) / knot_diff;
-                let beta = N::one() - alpha.clone();
-
-                buffer.0[i] = buffer.0[i - 1].clone() * beta + buffer.0[i].clone() * alpha;
-            }
-        }
-
-        buffer.0.pop().unwrap()
-    }
-
-    fn derivative<I: Infinitesimal<N>>(
-        &self,
-        dim: Dim,
-        control_points: &[Jet<N, I>],
-        buffer: &mut BSplineCurveBuffer<N, I>,
-        x: &N,
-    ) -> Jet<N, I> {
-        // The algorithm is inspired by https://en.wikipedia.org/wiki/De_Boor%27s_algorithm
-
-        // We assume that the number of control points correct because it was checked before
-        debug_assert_eq!(
-            control_points.len(),
-            necessary_control_point_count(self.degree, self.knot_count()),
-        );
-
-        if self.degree == 0 {
-            return Jet::new(N::zero(), I::zeros(dim));
-        }
-
-        let interval_index = self.find_interval(x);
-
-        let derivative_control_points = (0..self.degree).map(|j| {
-            let left_control_point = &control_points[j + interval_index - self.degree];
-            let right_control_point = &control_points[j + interval_index - self.degree + 1];
-            let control_point_diff = right_control_point.clone() - left_control_point.clone();
-
-            let left_knot = &self.padded_knots[j + interval_index - self.degree + 1];
-            let right_knot = &self.padded_knots[j + interval_index + 1];
-            let knot_diff = right_knot.clone() - left_knot.clone();
-
-            // `knot_diff` is non-zero because we assume that the knots are strictly increasing
-            // and at most one padding knot is used for the difference
-            debug_assert!(!knot_diff.is_zero());
-
-            let degree_number = N::from_integer(self.degree as i32);
-
-            control_point_diff * degree_number / knot_diff
-        });
-
-        buffer.0.clear();
-        buffer.0.extend(derivative_control_points);
-
-        for step in 1..self.degree {
-            for i in (step..self.degree).rev() {
-                let left_knot = &self.padded_knots[interval_index + i - (self.degree - 1)];
-                let right_knot = &self.padded_knots[interval_index + 1 + i - step];
-                let knot_diff = right_knot.clone() - left_knot.clone();
-
-                // `knot_diff` is non-zero because we assume that the knots are strictly increasing
-                // and at most one padding knot is used for the difference
-                debug_assert!(!knot_diff.is_zero());
-
-                let alpha = (x.clone() - left_knot.clone()) / knot_diff;
-                let beta = N::one() - alpha.clone();
-
-                buffer.0[i] = buffer.0[i - 1].clone() * beta + buffer.0[i].clone() * alpha;
-            }
-        }
-
-        buffer.0.pop().unwrap()
+        knots_without_padding(self.degree, &self.padded_knots)
     }
 
     /// The number of control points that are necessary for construction a [`BSplineCurve`].
@@ -373,13 +236,31 @@ impl<N: Number, I: Infinitesimal<N>> BSplineCurve<N, I> {
 
     /// Evaluates the curve for the given x-value.
     pub fn value(&self, x: &N, buffer: &mut BSplineCurveBuffer<N, I>) -> Jet<N, I> {
-        self.bspline.value(&self.control_points, buffer, x)
+        calc_value(
+            self.bspline.degree,
+            &self.bspline.padded_knots,
+            &self.control_points,
+            x,
+            buffer,
+        )
     }
 
-    /// Evaluates the derivative of the curve for the given x-value.
-    pub fn derivative(&self, x: &N, buffer: &mut BSplineCurveBuffer<N, I>) -> Jet<N, I> {
-        self.bspline
-            .derivative(self.dim, &self.control_points, buffer, x)
+    /// Evaluates the curve's derivative of the given order and for the given x-value.
+    pub fn derivative(
+        &self,
+        order: usize,
+        x: &N,
+        buffer: &mut BSplineCurveBuffer<N, I>,
+    ) -> Jet<N, I> {
+        calc_derivative(
+            self.dim,
+            self.bspline.degree,
+            &self.bspline.padded_knots,
+            &self.control_points,
+            order,
+            x,
+            buffer,
+        )
     }
 }
 
@@ -387,8 +268,202 @@ fn min_knot_count(degree: usize) -> usize {
     degree + 1
 }
 
+pub fn knot_count_without_padding<N: Number>(degree: usize, padded_knots: &[N]) -> usize {
+    padded_knots.len() - 2 * degree
+}
+
+pub fn knots_without_padding<N: Number>(degree: usize, padded_knots: &[N]) -> &[N] {
+    &padded_knots[degree..padded_knots.len() - degree]
+}
+
 fn necessary_control_point_count(degree: usize, knot_count: usize) -> usize {
     knot_count + degree.saturating_sub(1)
+}
+
+fn calc_value<N: Number, I: Infinitesimal<N>>(
+    degree: usize,
+    padded_knots: &[N],
+    control_points: &[Jet<N, I>],
+    x: &N,
+    buffer: &mut BSplineCurveBuffer<N, I>,
+) -> Jet<N, I> {
+    // The algorithm is inspired by https://en.wikipedia.org/wiki/De_Boor%27s_algorithm
+
+    // We assume that the number of control points correct because it was checked before
+    debug_assert_eq!(
+        control_points.len(),
+        necessary_control_point_count(degree, knot_count_without_padding(degree, padded_knots)),
+    );
+
+    let interval_index = find_interval(degree, padded_knots, x);
+
+    // Prepare the buffer with the relevant control points
+    buffer.0.clear();
+    buffer.0.extend(relevant_control_points(
+        degree,
+        interval_index,
+        control_points,
+    ));
+
+    // Calculate the value
+    de_boor_algorithm(degree, padded_knots, interval_index, x, buffer)
+}
+
+fn calc_derivative<N: Number, I: Infinitesimal<N>>(
+    dim: Dim,
+    degree: usize,
+    padded_knots: &[N],
+    control_points: &[Jet<N, I>],
+    order: usize,
+    x: &N,
+    buffer: &mut BSplineCurveBuffer<N, I>,
+) -> Jet<N, I> {
+    if order == 0 {
+        // We interpret the derivative of order 0 as the original curve
+        return calc_value(degree, padded_knots, control_points, x, buffer);
+    }
+
+    // We assume that the number of control points correct because it was checked before
+    debug_assert_eq!(
+        control_points.len(),
+        necessary_control_point_count(degree, knot_count_without_padding(degree, padded_knots)),
+    );
+
+    if order > degree {
+        // If the order is greater than the degree, we knot that derivative is always zero
+        return Jet::new(N::zero(), I::zeros(dim));
+    }
+
+    let derivative_degree = degree - order;
+    let interval_index = find_interval(degree, padded_knots, x);
+
+    // Prepare the buffer with the relevant control points
+    buffer.0.clear();
+    buffer.0.extend(relevant_control_points(
+        degree,
+        interval_index,
+        control_points,
+    ));
+
+    // Calculate the control points for the derivative
+    calc_derivative_control_points(
+        degree,
+        derivative_degree,
+        padded_knots,
+        interval_index,
+        buffer,
+    );
+
+    // Calculate the derivative
+    de_boor_algorithm(derivative_degree, padded_knots, interval_index, x, buffer)
+}
+
+fn find_interval<N: Number>(degree: usize, padded_knots: &[N], x: &N) -> usize {
+    let knots = knots_without_padding(degree, padded_knots);
+
+    // Calculate the knots between the intervals
+    let interval_knots = if degree == 0 {
+        // Because `degree` is at least 0, we know that we have at least 1 knot
+        debug_assert!(!knots.is_empty());
+
+        // `degree` 0 is asymmetrical and "right-heavy" and we are not allowed to
+        // omit the last knot, therefore omit only the first knot
+        &knots[1..]
+    } else {
+        // Because `degree` is at least 1, we know that we have at least 2 knots
+        debug_assert!(knots.len() >= 2);
+
+        // We omit the first and last knot
+        &knots[1..knots.len() - 1]
+    };
+
+    // Find the interval that contains `x`
+    let interval_knot_index = match interval_knots.binary_search_by(|k| N::total_cmp(k, x)) {
+        Ok(index) => index,
+        Err(index) => index,
+    };
+
+    interval_knot_index + degree
+}
+
+fn relevant_control_points<N: Number, I: Infinitesimal<N>>(
+    degree: usize,
+    interval_index: usize,
+    control_points: &[Jet<N, I>],
+) -> impl Iterator<Item = Jet<N, I>> + '_ {
+    control_points[interval_index - degree..=interval_index]
+        .iter()
+        .cloned()
+}
+
+// Implements the recursive part of the De Boor's algorithm.
+//
+// Expects that the buffer contains `degree + 1` control points.
+//
+// Inspired by https://en.wikipedia.org/wiki/De_Boor%27s_algorithm
+fn de_boor_algorithm<N: Number, I: Infinitesimal<N>>(
+    degree: usize,
+    padded_knots: &[N],
+    interval_index: usize,
+    x: &N,
+    buffer: &mut BSplineCurveBuffer<N, I>,
+) -> Jet<N, I> {
+    for step in 1..=degree {
+        for i in (step..=degree).rev() {
+            let left_knot = &padded_knots[interval_index + i - degree];
+            let right_knot = &padded_knots[interval_index + 1 + i - step];
+            let knot_diff = right_knot.clone() - left_knot.clone();
+
+            // `knot_diff` is non-zero because we assume that the knots are strictly increasing
+            // and at most one padding knot is used for the difference
+            debug_assert!(!knot_diff.is_zero());
+
+            let alpha = (x.clone() - left_knot.clone()) / knot_diff;
+            let beta = N::one() - alpha.clone();
+
+            let left_temp = buffer.0[i - 1].clone();
+            let right_temp = &mut buffer.0[i];
+            *right_temp = left_temp * beta + right_temp.clone() * alpha;
+        }
+    }
+
+    buffer.0.pop().unwrap()
+}
+
+// Calculates the control points for the curve's derivative with the given degree.
+//
+// Expects that the buffer contains `degree + 1` control points of the B-spline curve.
+// After this functions returns the buffer contains `derivative_degree + 1` control points of
+// the curve's derivative.
+//
+// Inspired by https://stackoverflow.com/questions/57507696/b-spline-derivative-using-de-boors-algorithm
+fn calc_derivative_control_points<N: Number, I: Infinitesimal<N>>(
+    degree: usize,
+    derivative_degree: usize,
+    padded_knots: &[N],
+    interval_index: usize,
+    buffer: &mut BSplineCurveBuffer<N, I>,
+) {
+    for step in (derivative_degree..degree).rev() {
+        for i in 0..=step {
+            let left_knot = &padded_knots[i + interval_index - step];
+            let right_knot = &padded_knots[i + interval_index + 1];
+            let knot_diff = right_knot.clone() - left_knot.clone();
+
+            // `knot_diff` is non-zero because we assume that the knots are strictly increasing
+            // and at most one padding knot is used for the difference
+            debug_assert!(!knot_diff.is_zero());
+
+            let alpha = N::from_integer((step + 1) as i32) / knot_diff;
+
+            let right_temp = buffer.0[i + 1].clone();
+            let left_temp = &mut buffer.0[i];
+            *left_temp = (right_temp - left_temp.clone()) * alpha;
+        }
+    }
+
+    // Remove unnecessary entries from buffer
+    buffer.0.drain(derivative_degree + 1..);
 }
 
 #[cfg(test)]
@@ -534,265 +609,537 @@ mod tests {
         }
     }
 
+    fn create_bspline_example(
+        degree: usize,
+        knots: Vec<f32>,
+        control_points: Vec<f32>,
+    ) -> BSplineCurve<f32, NoInfinitesimal> {
+        let dim = Dim(0);
+        let control_points = control_points
+            .into_iter()
+            .map(|p| Jet::new(p, NoInfinitesimal))
+            .collect();
+        let bspline = BSpline::<f32>::new(degree, knots).unwrap();
+        BSplineCurve::new(dim, bspline, control_points).unwrap()
+    }
+
+    fn check_bspline_example(
+        curve: BSplineCurve<f32, NoInfinitesimal>,
+        expected_results: Vec<(Option<usize>, f32, f32)>,
+    ) {
+        let mut violations = Vec::new();
+        let mut buffer = BSplineCurveBuffer::new(curve.bspline().degree);
+
+        for (order, x, expected_y) in expected_results {
+            let actual_y = match order {
+                None => curve.value(&x, &mut buffer).real,
+                Some(order) => curve.derivative(order, &x, &mut buffer).real,
+            };
+
+            if expected_y != actual_y {
+                violations.push((order, x, expected_y, actual_y))
+            }
+        }
+
+        let no_violation = violations.is_empty();
+
+        let violation_message = move || {
+            let mut message = String::new();
+
+            message += "B-spline produces unexpected results:\n";
+
+            for (order, x, expected_y, actual_y) in violations {
+                let prefix = match order {
+                    None => String::from("f"),
+                    Some(order) => format!("f^{order}"),
+                };
+                message +=
+                    &format!("\t{prefix}({x}) is {actual_y}, but {expected_y} was expected\n");
+            }
+
+            message
+        };
+
+        assert!(no_violation, "{}", violation_message());
+    }
+
     // Note: This B-spline curve is plotted in `bspline_examples.rs`
     #[test]
     fn bspline_example_0_a() {
-        let degree = 0;
-        let knots = vec![1.0];
-        let dim = Dim(0);
-        let control_points = [2.0].map(|p: f32| Jet::new(p, NoInfinitesimal)).to_vec();
+        let curve = create_bspline_example(0, vec![1.0], vec![2.0]);
 
-        let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-        let curve = BSplineCurve::new(dim, bspline, control_points.clone()).unwrap();
-        let mut buffer = BSplineCurveBuffer::new(degree);
-
-        assert_eq!(curve.value(&0.5, &mut buffer).real, 2.0);
-        assert_eq!(curve.value(&1.0, &mut buffer).real, 2.0);
-        assert_eq!(curve.value(&1.5, &mut buffer).real, 2.0);
-
-        assert_eq!(curve.derivative(&0.5, &mut buffer).real, 0.0);
-        assert_eq!(curve.derivative(&1.0, &mut buffer).real, 0.0);
-        assert_eq!(curve.derivative(&1.5, &mut buffer).real, 0.0);
+        check_bspline_example(
+            curve,
+            vec![
+                (None, 0.5, 2.0),
+                (None, 1.0, 2.0),
+                (None, 1.5, 2.0),
+                (Some(0), 0.5, 2.0),
+                (Some(0), 1.0, 2.0),
+                (Some(0), 1.5, 2.0),
+                (Some(1), 0.5, 0.0),
+                (Some(1), 1.0, 0.0),
+                (Some(1), 1.5, 0.0),
+                (Some(2), 0.5, 0.0),
+                (Some(2), 1.0, 0.0),
+                (Some(2), 1.5, 0.0),
+            ],
+        );
     }
 
     // Note: This B-spline curve is plotted in `bspline_examples.rs`
     #[test]
     fn bspline_example_0_b() {
-        let degree = 0;
-        let knots = vec![1.0, 2.0, 3.0];
-        let dim = Dim(0);
-        let control_points = [2.0, 3.0, 1.0]
-            .map(|p: f32| Jet::new(p, NoInfinitesimal))
-            .to_vec();
+        let curve = create_bspline_example(0, vec![1.0, 2.0, 3.0], vec![2.0, 3.0, 1.0]);
 
-        let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-        let curve = BSplineCurve::new(dim, bspline, control_points.clone()).unwrap();
-        let mut buffer = BSplineCurveBuffer::new(degree);
-
-        assert_eq!(curve.value(&0.5, &mut buffer).real, 2.0);
-        assert_eq!(curve.value(&1.0, &mut buffer).real, 2.0);
-        assert_eq!(curve.value(&1.5, &mut buffer).real, 2.0);
-        assert_eq!(curve.value(&2.0, &mut buffer).real, 2.0);
-        assert_eq!(curve.value(&2.5, &mut buffer).real, 3.0);
-        assert_eq!(curve.value(&3.0, &mut buffer).real, 3.0);
-        assert_eq!(curve.value(&3.5, &mut buffer).real, 1.0);
-
-        assert_eq!(curve.derivative(&0.5, &mut buffer).real, 0.0);
-        assert_eq!(curve.derivative(&1.0, &mut buffer).real, 0.0);
-        assert_eq!(curve.derivative(&1.5, &mut buffer).real, 0.0);
-        assert_eq!(curve.derivative(&2.0, &mut buffer).real, 0.0);
-        assert_eq!(curve.derivative(&2.5, &mut buffer).real, 0.0);
-        assert_eq!(curve.derivative(&3.0, &mut buffer).real, 0.0);
-        assert_eq!(curve.derivative(&3.5, &mut buffer).real, 0.0);
+        check_bspline_example(
+            curve,
+            vec![
+                (None, 0.5, 2.0),
+                (None, 1.0, 2.0),
+                (None, 1.5, 2.0),
+                (None, 2.0, 2.0),
+                (None, 2.5, 3.0),
+                (None, 3.0, 3.0),
+                (None, 3.5, 1.0),
+                (Some(0), 0.5, 2.0),
+                (Some(0), 1.0, 2.0),
+                (Some(0), 1.5, 2.0),
+                (Some(0), 2.0, 2.0),
+                (Some(0), 2.5, 3.0),
+                (Some(0), 3.0, 3.0),
+                (Some(0), 3.5, 1.0),
+                (Some(1), 0.5, 0.0),
+                (Some(1), 1.0, 0.0),
+                (Some(1), 1.5, 0.0),
+                (Some(1), 2.0, 0.0),
+                (Some(1), 2.5, 0.0),
+                (Some(1), 3.0, 0.0),
+                (Some(1), 3.5, 0.0),
+                (Some(2), 0.5, 0.0),
+                (Some(2), 1.0, 0.0),
+                (Some(2), 1.5, 0.0),
+                (Some(2), 2.0, 0.0),
+                (Some(2), 2.5, 0.0),
+                (Some(2), 3.0, 0.0),
+                (Some(2), 3.5, 0.0),
+            ],
+        );
     }
 
     // Note: This B-spline curve is plotted in `bspline_examples.rs`
     #[test]
     fn bspline_example_1_a() {
-        let degree = 1;
-        let knots = vec![1.0, 2.0];
-        let dim = Dim(0);
-        let control_points = [1.0, 3.0]
-            .map(|p: f32| Jet::new(p, NoInfinitesimal))
-            .to_vec();
+        let curve = create_bspline_example(1, vec![1.0, 2.0], vec![1.0, 3.0]);
 
-        let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-        let curve = BSplineCurve::new(dim, bspline, control_points.clone()).unwrap();
-        let mut buffer = BSplineCurveBuffer::new(degree);
-
-        assert_eq!(curve.value(&0.5, &mut buffer).real, 0.0);
-        assert_eq!(curve.value(&1.0, &mut buffer).real, 1.0);
-        assert_eq!(curve.value(&1.5, &mut buffer).real, 2.0);
-        assert_eq!(curve.value(&2.0, &mut buffer).real, 3.0);
-        assert_eq!(curve.value(&2.5, &mut buffer).real, 4.0);
-
-        assert_eq!(curve.derivative(&0.5, &mut buffer).real, 2.0);
-        assert_eq!(curve.derivative(&1.0, &mut buffer).real, 2.0);
-        assert_eq!(curve.derivative(&1.5, &mut buffer).real, 2.0);
-        assert_eq!(curve.derivative(&2.0, &mut buffer).real, 2.0);
-        assert_eq!(curve.derivative(&2.5, &mut buffer).real, 2.0);
+        check_bspline_example(
+            curve,
+            vec![
+                (None, 0.5, 0.0),
+                (None, 1.0, 1.0),
+                (None, 1.5, 2.0),
+                (None, 2.0, 3.0),
+                (None, 2.5, 4.0),
+                (Some(0), 0.5, 0.0),
+                (Some(0), 1.0, 1.0),
+                (Some(0), 1.5, 2.0),
+                (Some(0), 2.0, 3.0),
+                (Some(0), 2.5, 4.0),
+                (Some(1), 0.5, 2.0),
+                (Some(1), 1.0, 2.0),
+                (Some(1), 1.5, 2.0),
+                (Some(1), 2.0, 2.0),
+                (Some(1), 2.5, 2.0),
+                (Some(2), 0.5, 0.0),
+                (Some(2), 1.0, 0.0),
+                (Some(2), 1.5, 0.0),
+                (Some(2), 2.0, 0.0),
+                (Some(2), 2.5, 0.0),
+                (Some(3), 0.5, 0.0),
+                (Some(3), 1.0, 0.0),
+                (Some(3), 1.5, 0.0),
+                (Some(3), 2.0, 0.0),
+                (Some(3), 2.5, 0.0),
+            ],
+        );
     }
 
     // Note: This B-spline curve is plotted in `bspline_examples.rs`
     #[test]
     fn bspline_example_1_b() {
-        let degree = 1;
-        let knots = vec![1.0, 2.0, 3.0, 4.0];
-        let dim = Dim(0);
-        let control_points = [1.0, 3.0, 2.0, 5.0]
-            .map(|p: f32| Jet::new(p, NoInfinitesimal))
-            .to_vec();
+        let curve = create_bspline_example(1, vec![1.0, 2.0, 3.0, 4.0], vec![1.0, 3.0, 2.0, 5.0]);
 
-        let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-        let curve = BSplineCurve::new(dim, bspline, control_points.clone()).unwrap();
-        let mut buffer = BSplineCurveBuffer::new(degree);
-
-        assert_eq!(curve.value(&0.5, &mut buffer).real, 0.0);
-        assert_eq!(curve.value(&1.0, &mut buffer).real, 1.0);
-        assert_eq!(curve.value(&1.5, &mut buffer).real, 2.0);
-        assert_eq!(curve.value(&2.0, &mut buffer).real, 3.0);
-        assert_eq!(curve.value(&2.5, &mut buffer).real, 2.5);
-        assert_eq!(curve.value(&3.0, &mut buffer).real, 2.0);
-        assert_eq!(curve.value(&3.5, &mut buffer).real, 3.5);
-        assert_eq!(curve.value(&4.0, &mut buffer).real, 5.0);
-        assert_eq!(curve.value(&4.5, &mut buffer).real, 6.5);
-
-        assert_eq!(curve.derivative(&0.5, &mut buffer).real, 2.0);
-        assert_eq!(curve.derivative(&1.0, &mut buffer).real, 2.0);
-        assert_eq!(curve.derivative(&1.5, &mut buffer).real, 2.0);
-        assert_eq!(curve.derivative(&2.0, &mut buffer).real, 2.0);
-        assert_eq!(curve.derivative(&2.5, &mut buffer).real, -1.0);
-        assert_eq!(curve.derivative(&3.0, &mut buffer).real, -1.0);
-        assert_eq!(curve.derivative(&3.5, &mut buffer).real, 3.0);
-        assert_eq!(curve.derivative(&4.0, &mut buffer).real, 3.0);
-        assert_eq!(curve.derivative(&4.5, &mut buffer).real, 3.0);
+        check_bspline_example(
+            curve,
+            vec![
+                (None, 0.5, 0.0),
+                (None, 1.0, 1.0),
+                (None, 1.5, 2.0),
+                (None, 2.0, 3.0),
+                (None, 2.5, 2.5),
+                (None, 3.0, 2.0),
+                (None, 3.5, 3.5),
+                (None, 4.0, 5.0),
+                (None, 4.5, 6.5),
+                (Some(0), 0.5, 0.0),
+                (Some(0), 1.0, 1.0),
+                (Some(0), 1.5, 2.0),
+                (Some(0), 2.0, 3.0),
+                (Some(0), 2.5, 2.5),
+                (Some(0), 3.0, 2.0),
+                (Some(0), 3.5, 3.5),
+                (Some(0), 4.0, 5.0),
+                (Some(0), 4.5, 6.5),
+                (Some(1), 0.5, 2.0),
+                (Some(1), 1.0, 2.0),
+                (Some(1), 1.5, 2.0),
+                (Some(1), 2.0, 2.0),
+                (Some(1), 2.5, -1.0),
+                (Some(1), 3.0, -1.0),
+                (Some(1), 3.5, 3.0),
+                (Some(1), 4.0, 3.0),
+                (Some(1), 4.5, 3.0),
+                (Some(2), 0.5, 0.0),
+                (Some(2), 1.0, 0.0),
+                (Some(2), 1.5, 0.0),
+                (Some(2), 2.0, 0.0),
+                (Some(2), 2.5, 0.0),
+                (Some(2), 3.0, 0.0),
+                (Some(2), 3.5, 0.0),
+                (Some(2), 4.0, 0.0),
+                (Some(2), 4.5, 0.0),
+                (Some(3), 0.5, 0.0),
+                (Some(3), 1.0, 0.0),
+                (Some(3), 1.5, 0.0),
+                (Some(3), 2.0, 0.0),
+                (Some(3), 2.5, 0.0),
+                (Some(3), 3.0, 0.0),
+                (Some(3), 3.5, 0.0),
+                (Some(3), 4.0, 0.0),
+                (Some(3), 4.5, 0.0),
+            ],
+        );
     }
 
     // Note: This B-spline curve is plotted in `bspline_examples.rs`
     #[test]
     fn bspline_example_2_a() {
-        let degree = 2;
-        let knots = vec![1.0, 2.0, 3.0];
-        let dim = Dim(0);
-        let control_points = [1.0, 3.0, 2.0, 4.0]
-            .map(|p: f32| Jet::new(p, NoInfinitesimal))
-            .to_vec();
+        let curve = create_bspline_example(2, vec![1.0, 2.0, 3.0], vec![1.0, 3.0, 2.0, 4.0]);
 
-        let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-        let curve = BSplineCurve::new(dim, bspline, control_points.clone()).unwrap();
-        let mut buffer = BSplineCurveBuffer::new(degree);
-
-        assert_eq!(curve.value(&0.5, &mut buffer).real, -1.625);
-        assert_eq!(curve.value(&1.0, &mut buffer).real, 1.0);
-        assert_eq!(curve.value(&1.5, &mut buffer).real, 2.375);
-        assert_eq!(curve.value(&2.0, &mut buffer).real, 2.5);
-        assert_eq!(curve.value(&2.5, &mut buffer).real, 2.625);
-        assert_eq!(curve.value(&3.0, &mut buffer).real, 4.0);
-        assert_eq!(curve.value(&3.5, &mut buffer).real, 6.625);
-
-        assert_eq!(curve.derivative(&0.5, &mut buffer).real, 6.5);
-        assert_eq!(curve.derivative(&1.0, &mut buffer).real, 4.0);
-        assert_eq!(curve.derivative(&1.5, &mut buffer).real, 1.5);
-        assert_eq!(curve.derivative(&2.0, &mut buffer).real, -1.0);
-        assert_eq!(curve.derivative(&2.5, &mut buffer).real, 1.5);
-        assert_eq!(curve.derivative(&3.0, &mut buffer).real, 4.0);
-        assert_eq!(curve.derivative(&3.5, &mut buffer).real, 6.5);
+        check_bspline_example(
+            curve,
+            vec![
+                (None, 0.5, -1.625),
+                (None, 1.0, 1.0),
+                (None, 1.5, 2.375),
+                (None, 2.0, 2.5),
+                (None, 2.5, 2.625),
+                (None, 3.0, 4.0),
+                (None, 3.5, 6.625),
+                (Some(0), 0.5, -1.625),
+                (Some(0), 1.0, 1.0),
+                (Some(0), 1.5, 2.375),
+                (Some(0), 2.0, 2.5),
+                (Some(0), 2.5, 2.625),
+                (Some(0), 3.0, 4.0),
+                (Some(0), 3.5, 6.625),
+                (Some(1), 0.5, 6.5),
+                (Some(1), 1.0, 4.0),
+                (Some(1), 1.5, 1.5),
+                (Some(1), 2.0, -1.0),
+                (Some(1), 2.5, 1.5),
+                (Some(1), 3.0, 4.0),
+                (Some(1), 3.5, 6.5),
+                (Some(2), 0.5, -5.0),
+                (Some(2), 1.0, -5.0),
+                (Some(2), 1.5, -5.0),
+                (Some(2), 2.0, -5.0),
+                (Some(2), 2.5, 5.0),
+                (Some(2), 3.0, 5.0),
+                (Some(2), 3.5, 5.0),
+                (Some(3), 0.5, 0.0),
+                (Some(3), 1.0, 0.0),
+                (Some(3), 1.5, 0.0),
+                (Some(3), 2.0, 0.0),
+                (Some(3), 2.5, 0.0),
+                (Some(3), 3.0, 0.0),
+                (Some(3), 3.5, 0.0),
+                (Some(4), 0.5, 0.0),
+                (Some(4), 1.0, 0.0),
+                (Some(4), 1.5, 0.0),
+                (Some(4), 2.0, 0.0),
+                (Some(4), 2.5, 0.0),
+                (Some(4), 3.0, 0.0),
+                (Some(4), 3.5, 0.0),
+            ],
+        );
     }
 
     // Note: This B-spline curve is plotted in `bspline_examples.rs`
     #[test]
     fn bspline_example_2_b() {
-        let degree = 2;
-        let knots = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-        let dim = Dim(0);
-        let control_points = [1.0, 3.0, 2.0, 4.0, 1.0, 5.0]
-            .map(|p: f32| Jet::new(p, NoInfinitesimal))
-            .to_vec();
+        let curve = create_bspline_example(
+            2,
+            vec![1.0, 2.0, 3.0, 4.0, 5.0],
+            vec![1.0, 3.0, 2.0, 4.0, 1.0, 5.0],
+        );
 
-        let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-        let curve = BSplineCurve::new(dim, bspline, control_points.clone()).unwrap();
-        let mut buffer = BSplineCurveBuffer::new(degree);
-
-        assert_eq!(curve.value(&0.5, &mut buffer).real, -1.625);
-        assert_eq!(curve.value(&1.0, &mut buffer).real, 1.0);
-        assert_eq!(curve.value(&1.5, &mut buffer).real, 2.375);
-        assert_eq!(curve.value(&2.0, &mut buffer).real, 2.5);
-        assert_eq!(curve.value(&2.5, &mut buffer).real, 2.375);
-        assert_eq!(curve.value(&3.0, &mut buffer).real, 3.0);
-        assert_eq!(curve.value(&3.5, &mut buffer).real, 3.375);
-        assert_eq!(curve.value(&4.0, &mut buffer).real, 2.5);
-        assert_eq!(curve.value(&4.5, &mut buffer).real, 2.375);
-        assert_eq!(curve.value(&5.0, &mut buffer).real, 5.0);
-        assert_eq!(curve.value(&5.5, &mut buffer).real, 10.375);
-
-        assert_eq!(curve.derivative(&0.5, &mut buffer).real, 6.5);
-        assert_eq!(curve.derivative(&1.0, &mut buffer).real, 4.0);
-        assert_eq!(curve.derivative(&1.5, &mut buffer).real, 1.5);
-        assert_eq!(curve.derivative(&2.0, &mut buffer).real, -1.0);
-        assert_eq!(curve.derivative(&2.5, &mut buffer).real, 0.5);
-        assert_eq!(curve.derivative(&3.0, &mut buffer).real, 2.0);
-        assert_eq!(curve.derivative(&3.5, &mut buffer).real, -0.5);
-        assert_eq!(curve.derivative(&4.0, &mut buffer).real, -3.0);
-        assert_eq!(curve.derivative(&4.5, &mut buffer).real, 2.5);
-        assert_eq!(curve.derivative(&5.0, &mut buffer).real, 8.0);
-        assert_eq!(curve.derivative(&5.5, &mut buffer).real, 13.5);
+        check_bspline_example(
+            curve,
+            vec![
+                (None, 0.5, -1.625),
+                (None, 1.0, 1.0),
+                (None, 1.5, 2.375),
+                (None, 2.0, 2.5),
+                (None, 2.5, 2.375),
+                (None, 3.0, 3.0),
+                (None, 3.5, 3.375),
+                (None, 4.0, 2.5),
+                (None, 4.5, 2.375),
+                (None, 5.0, 5.0),
+                (None, 5.5, 10.375),
+                (Some(0), 0.5, -1.625),
+                (Some(0), 1.0, 1.0),
+                (Some(0), 1.5, 2.375),
+                (Some(0), 2.0, 2.5),
+                (Some(0), 2.5, 2.375),
+                (Some(0), 3.0, 3.0),
+                (Some(0), 3.5, 3.375),
+                (Some(0), 4.0, 2.5),
+                (Some(0), 4.5, 2.375),
+                (Some(0), 5.0, 5.0),
+                (Some(0), 5.5, 10.375),
+                (Some(1), 0.5, 6.5),
+                (Some(1), 1.0, 4.0),
+                (Some(1), 1.5, 1.5),
+                (Some(1), 2.0, -1.0),
+                (Some(1), 2.5, 0.5),
+                (Some(1), 3.0, 2.0),
+                (Some(1), 3.5, -0.5),
+                (Some(1), 4.0, -3.0),
+                (Some(1), 4.5, 2.5),
+                (Some(1), 5.0, 8.0),
+                (Some(1), 5.5, 13.5),
+                (Some(2), 0.5, -5.0),
+                (Some(2), 1.0, -5.0),
+                (Some(2), 1.5, -5.0),
+                (Some(2), 2.0, -5.0),
+                (Some(2), 2.5, 3.0),
+                (Some(2), 3.0, 3.0),
+                (Some(2), 3.5, -5.0),
+                (Some(2), 4.0, -5.0),
+                (Some(2), 4.5, 11.0),
+                (Some(2), 5.0, 11.0),
+                (Some(2), 5.5, 11.0),
+                (Some(3), 0.5, 0.0),
+                (Some(3), 1.0, 0.0),
+                (Some(3), 1.5, 0.0),
+                (Some(3), 2.0, 0.0),
+                (Some(3), 2.5, 0.0),
+                (Some(3), 3.0, 0.0),
+                (Some(3), 3.5, 0.0),
+                (Some(3), 4.0, 0.0),
+                (Some(3), 4.5, 0.0),
+                (Some(3), 5.0, 0.0),
+                (Some(3), 5.5, 0.0),
+                (Some(4), 0.5, 0.0),
+                (Some(4), 1.0, 0.0),
+                (Some(4), 1.5, 0.0),
+                (Some(4), 2.0, 0.0),
+                (Some(4), 2.5, 0.0),
+                (Some(4), 3.0, 0.0),
+                (Some(4), 3.5, 0.0),
+                (Some(4), 4.0, 0.0),
+                (Some(4), 4.5, 0.0),
+                (Some(4), 5.0, 0.0),
+                (Some(4), 5.5, 0.0),
+            ],
+        );
     }
 
     // Note: This B-spline curve is plotted in `bspline_examples.rs`
     #[test]
     fn bspline_example_3_a() {
-        let degree = 3;
-        let knots = vec![1.0, 2.0, 3.0, 4.0];
-        let dim = Dim(0);
-        let control_points = [1.0, 3.0, 2.0, 4.0, 1.0, 5.0]
-            .map(|p: f32| Jet::new(p, NoInfinitesimal))
-            .to_vec();
+        let curve = create_bspline_example(
+            3,
+            vec![1.0, 2.0, 3.0, 4.0],
+            vec![1.0, 3.0, 2.0, 4.0, 1.0, 5.0],
+        );
 
-        let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-        let curve = BSplineCurve::new(dim, bspline, control_points.clone()).unwrap();
-        let mut buffer = BSplineCurveBuffer::new(degree);
-
-        assert_eq!(curve.value(&0.5, &mut buffer).real, -4.260417);
-        assert_eq!(curve.value(&1.0, &mut buffer).real, 1.0);
-        assert_eq!(curve.value(&1.5, &mut buffer).real, 2.5104165);
-        assert_eq!(curve.value(&2.0, &mut buffer).real, 2.5833333);
-        assert_eq!(curve.value(&2.5, &mut buffer).real, 2.9375);
-        assert_eq!(curve.value(&3.0, &mut buffer).real, 2.9166667);
-        assert_eq!(curve.value(&3.5, &mut buffer).real, 2.3020833);
-        assert_eq!(curve.value(&4.0, &mut buffer).real, 5.0);
-        assert_eq!(curve.value(&4.5, &mut buffer).real, 15.947917);
-
-        assert_eq!(curve.derivative(&0.5, &mut buffer).real, 15.8125);
-        assert_eq!(curve.derivative(&1.0, &mut buffer).real, 6.0);
-        assert_eq!(curve.derivative(&1.5, &mut buffer).real, 0.8125);
-        assert_eq!(curve.derivative(&2.0, &mut buffer).real, 0.25);
-        assert_eq!(curve.derivative(&2.5, &mut buffer).real, 0.75);
-        assert_eq!(curve.derivative(&3.0, &mut buffer).real, -1.25);
-        assert_eq!(curve.derivative(&3.5, &mut buffer).real, 0.4375);
-        assert_eq!(curve.derivative(&4.0, &mut buffer).real, 12.0);
-        assert_eq!(curve.derivative(&4.5, &mut buffer).real, 33.4375);
+        check_bspline_example(
+            curve,
+            vec![
+                (None, 0.5, -4.260417),
+                (None, 1.0, 1.0),
+                (None, 1.5, 2.5104165),
+                (None, 2.0, 2.5833333),
+                (None, 2.5, 2.9375),
+                (None, 3.0, 2.9166667),
+                (None, 3.5, 2.3020833),
+                (None, 4.0, 5.0),
+                (None, 4.5, 15.947917),
+                (Some(0), 0.5, -4.260417),
+                (Some(0), 1.0, 1.0),
+                (Some(0), 1.5, 2.5104165),
+                (Some(0), 2.0, 2.5833333),
+                (Some(0), 2.5, 2.9375),
+                (Some(0), 3.0, 2.9166667),
+                (Some(0), 3.5, 2.3020833),
+                (Some(0), 4.0, 5.0),
+                (Some(0), 4.5, 15.947917),
+                (Some(1), 0.5, 15.8125),
+                (Some(1), 1.0, 6.0),
+                (Some(1), 1.5, 0.8125),
+                (Some(1), 2.0, 0.25),
+                (Some(1), 2.5, 0.75),
+                (Some(1), 3.0, -1.25),
+                (Some(1), 3.5, 0.4375),
+                (Some(1), 4.0, 12.0),
+                (Some(1), 4.5, 33.4375),
+                (Some(2), 0.5, -24.25),
+                (Some(2), 1.0, -15.0),
+                (Some(2), 1.5, -5.75),
+                (Some(2), 2.0, 3.5),
+                (Some(2), 2.5, -1.5),
+                (Some(2), 3.0, -6.5),
+                (Some(2), 3.5, 13.25),
+                (Some(2), 4.0, 33.0),
+                (Some(2), 4.5, 52.75),
+                (Some(3), 0.5, 18.5),
+                (Some(3), 1.0, 18.50),
+                (Some(3), 1.5, 18.5),
+                (Some(3), 2.0, 18.5),
+                (Some(3), 2.5, -10.0),
+                (Some(3), 3.0, -10.0),
+                (Some(3), 3.5, 39.5),
+                (Some(3), 4.0, 39.5),
+                (Some(3), 4.5, 39.5),
+                (Some(4), 0.5, 0.0),
+                (Some(4), 1.0, 0.0),
+                (Some(4), 1.5, 0.0),
+                (Some(4), 2.0, 0.0),
+                (Some(4), 2.5, 0.0),
+                (Some(4), 3.0, 0.0),
+                (Some(4), 3.5, 0.0),
+                (Some(4), 4.0, 0.0),
+                (Some(4), 4.5, 0.0),
+                (Some(5), 0.5, 0.0),
+                (Some(5), 1.0, 0.0),
+                (Some(5), 1.5, 0.0),
+                (Some(5), 2.0, 0.0),
+                (Some(5), 2.5, 0.0),
+                (Some(5), 3.0, 0.0),
+                (Some(5), 3.5, 0.0),
+                (Some(5), 4.0, 0.0),
+                (Some(5), 4.5, 0.0),
+            ],
+        );
     }
 
     // Note: This B-spline curve is plotted in `bspline_examples.rs`
     #[test]
     fn bspline_example_3_b() {
-        let degree = 3;
-        let knots = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
-        let dim = Dim(0);
-        let control_points = [1.0, 3.0, 2.0, 4.0, 1.0, 5.0, 2.0, 3.0]
-            .map(|p: f32| Jet::new(p, NoInfinitesimal))
-            .to_vec();
+        let curve = create_bspline_example(
+            3,
+            vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            vec![1.0, 3.0, 2.0, 4.0, 1.0, 5.0, 2.0, 3.0],
+        );
 
-        let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-        let curve = BSplineCurve::new(dim, bspline, control_points.clone()).unwrap();
-        let mut buffer = BSplineCurveBuffer::new(degree);
-
-        assert_eq!(curve.value(&0.5, &mut buffer).real, -4.260417);
-        assert_eq!(curve.value(&1.0, &mut buffer).real, 1.0);
-        assert_eq!(curve.value(&1.5, &mut buffer).real, 2.5104165);
-        assert_eq!(curve.value(&2.0, &mut buffer).real, 2.5833333);
-        assert_eq!(curve.value(&2.5, &mut buffer).real, 2.96875);
-        assert_eq!(curve.value(&3.0, &mut buffer).real, 3.1666665);
-        assert_eq!(curve.value(&3.5, &mut buffer).real, 2.5416665);
-        assert_eq!(curve.value(&4.0, &mut buffer).real, 2.1666667);
-        assert_eq!(curve.value(&4.5, &mut buffer).real, 2.96875);
-        assert_eq!(curve.value(&5.0, &mut buffer).real, 3.5833335);
-        assert_eq!(curve.value(&5.5, &mut buffer).real, 2.8854165);
-        assert_eq!(curve.value(&6.0, &mut buffer).real, 3.0);
-        assert_eq!(curve.value(&6.5, &mut buffer).real, 6.8645835);
-
-        assert_eq!(curve.derivative(&0.5, &mut buffer).real, 15.8125);
-        assert_eq!(curve.derivative(&1.0, &mut buffer).real, 6.0);
-        assert_eq!(curve.derivative(&1.5, &mut buffer).real, 0.8125);
-        assert_eq!(curve.derivative(&2.0, &mut buffer).real, 0.25);
-        assert_eq!(curve.derivative(&2.5, &mut buffer).real, 0.9375);
-        assert_eq!(curve.derivative(&3.0, &mut buffer).real, -0.5);
-        assert_eq!(curve.derivative(&3.5, &mut buffer).real, -1.5);
-        assert_eq!(curve.derivative(&4.0, &mut buffer).real, 0.5);
-        assert_eq!(curve.derivative(&4.5, &mut buffer).real, 2.0625);
-        assert_eq!(curve.derivative(&5.0, &mut buffer).real, -0.25);
-        assert_eq!(curve.derivative(&5.5, &mut buffer).real, -1.5625);
-        assert_eq!(curve.derivative(&6.0, &mut buffer).real, 3.0);
-        assert_eq!(curve.derivative(&6.5, &mut buffer).real, 13.4375);
+        check_bspline_example(
+            curve,
+            vec![
+                (None, 0.5, -4.260417),
+                (None, 1.0, 1.0),
+                (None, 1.5, 2.5104165),
+                (None, 2.0, 2.5833333),
+                (None, 2.5, 2.96875),
+                (None, 3.0, 3.1666665),
+                (None, 3.5, 2.5416665),
+                (None, 4.0, 2.1666667),
+                (None, 4.5, 2.96875),
+                (None, 5.0, 3.5833335),
+                (None, 5.5, 2.8854165),
+                (None, 6.0, 3.0),
+                (None, 6.5, 6.8645835),
+                (Some(0), 0.5, -4.260417),
+                (Some(0), 1.0, 1.0),
+                (Some(0), 1.5, 2.5104165),
+                (Some(0), 2.0, 2.5833333),
+                (Some(0), 2.5, 2.96875),
+                (Some(0), 3.0, 3.1666665),
+                (Some(0), 3.5, 2.5416665),
+                (Some(0), 4.0, 2.1666667),
+                (Some(0), 4.5, 2.96875),
+                (Some(0), 5.0, 3.5833335),
+                (Some(0), 5.5, 2.8854165),
+                (Some(0), 6.0, 3.0),
+                (Some(0), 6.5, 6.8645835),
+                (Some(1), 0.5, 15.8125),
+                (Some(1), 1.0, 6.0),
+                (Some(1), 1.5, 0.8125),
+                (Some(1), 2.0, 0.25),
+                (Some(1), 2.5, 0.9375),
+                (Some(1), 3.0, -0.5),
+                (Some(1), 3.5, -1.5),
+                (Some(1), 4.0, 0.5),
+                (Some(1), 4.5, 2.0625),
+                (Some(1), 5.0, -0.25),
+                (Some(1), 5.5, -1.5625),
+                (Some(1), 6.0, 3.0),
+                (Some(1), 6.5, 13.4375),
+                (Some(2), 0.5, -24.25),
+                (Some(2), 1.0, -15.0),
+                (Some(2), 1.5, -5.75),
+                (Some(2), 2.0, 3.5),
+                (Some(2), 2.5, -0.75),
+                (Some(2), 3.0, -5.0),
+                (Some(2), 3.5, 1.0),
+                (Some(2), 4.0, 7.0),
+                (Some(2), 4.5, -0.75),
+                (Some(2), 5.0, -8.5),
+                (Some(2), 5.5, 3.25),
+                (Some(2), 6.0, 15.0),
+                (Some(2), 6.5, 26.75),
+                (Some(3), 0.5, 18.5),
+                (Some(3), 1.0, 18.5),
+                (Some(3), 1.5, 18.5),
+                (Some(3), 2.0, 18.5),
+                (Some(3), 2.5, -8.5),
+                (Some(3), 3.0, -8.5),
+                (Some(3), 3.5, 12.0),
+                (Some(3), 4.0, 12.0),
+                (Some(3), 4.5, -15.5),
+                (Some(3), 5.0, -15.5),
+                (Some(3), 5.5, 23.5),
+                (Some(3), 6.0, 23.5),
+                (Some(3), 6.5, 23.5),
+                (Some(4), 0.5, 0.0),
+                (Some(4), 1.0, 0.0),
+                (Some(4), 1.5, 0.0),
+                (Some(4), 2.0, 0.0),
+                (Some(4), 2.5, 0.0),
+                (Some(4), 3.0, 0.0),
+                (Some(4), 3.5, 0.0),
+                (Some(4), 4.0, 0.0),
+                (Some(4), 4.5, 0.0),
+                (Some(4), 5.0, 0.0),
+                (Some(4), 5.5, 0.0),
+                (Some(4), 6.0, 0.0),
+                (Some(4), 6.5, 0.0),
+                (Some(5), 0.5, 0.0),
+                (Some(5), 1.0, 0.0),
+                (Some(5), 1.5, 0.0),
+                (Some(5), 2.0, 0.0),
+                (Some(5), 2.5, 0.0),
+                (Some(5), 3.0, 0.0),
+                (Some(5), 3.5, 0.0),
+                (Some(5), 4.0, 0.0),
+                (Some(5), 4.5, 0.0),
+                (Some(5), 5.0, 0.0),
+                (Some(5), 5.5, 0.0),
+                (Some(5), 6.0, 0.0),
+                (Some(5), 6.5, 0.0),
+            ],
+        );
     }
 }

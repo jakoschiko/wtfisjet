@@ -55,13 +55,38 @@ fn plot_curve(title_name: &str, file_name: &str, curve: BSplineCurve<f32, NoInfi
         .collect::<Vec<_>>();
     let curve_values_plot = poloto::build::line("curve", curve_points);
 
-    let derivative_points = range
+    let derivative_1_points = range
         .clone()
-        .map(|x| [x as f64, curve.derivative(&x, &mut buffer).real as f64])
+        .map(|x| [x as f64, curve.derivative(1, &x, &mut buffer).real as f64])
         .collect::<Vec<_>>();
-    let derivative_values_plot = poloto::build::line("derivative 1", derivative_points);
+    let derivative_1_values_plot = poloto::build::line("derivative 1", derivative_1_points);
 
-    let plots = plots!(knots_plot, curve_values_plot, derivative_values_plot);
+    let derivative_2_points = range
+        .clone()
+        .map(|x| [x as f64, curve.derivative(2, &x, &mut buffer).real as f64])
+        .collect::<Vec<_>>();
+    let derivative_2_values_plot = poloto::build::line("derivative 2", derivative_2_points);
+
+    let derivative_3_points = range
+        .clone()
+        .map(|x| [x as f64, curve.derivative(3, &x, &mut buffer).real as f64])
+        .collect::<Vec<_>>();
+    let derivative_3_values_plot = poloto::build::line("derivative 3", derivative_3_points);
+
+    let derivative_4_points = range
+        .clone()
+        .map(|x| [x as f64, curve.derivative(4, &x, &mut buffer).real as f64])
+        .collect::<Vec<_>>();
+    let derivative_4_values_plot = poloto::build::line("derivative 4", derivative_4_points);
+
+    let plots = plots!(
+        knots_plot,
+        curve_values_plot,
+        derivative_1_values_plot,
+        derivative_2_values_plot,
+        derivative_3_values_plot,
+        derivative_4_values_plot
+    );
 
     let canvas = poloto::render::canvas();
     let plotter = canvas
@@ -80,96 +105,60 @@ fn plot_curve(title_name: &str, file_name: &str, curve: BSplineCurve<f32, NoInfi
         .expect("Failed to create write the plot");
 }
 
-pub fn bspline_example_0_a() -> BSplineCurve<f32, NoInfinitesimal> {
-    let degree = 0;
-    let knots = vec![1.0];
+fn create_bspline_example(
+    degree: usize,
+    knots: Vec<f32>,
+    control_points: Vec<f32>,
+) -> BSplineCurve<f32, NoInfinitesimal> {
     let dim = Dim(0);
-    let control_points = [2.0].map(|p: f32| Jet::new(p, NoInfinitesimal)).to_vec();
-
-    let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-    BSplineCurve::new(dim, bspline, control_points.clone()).unwrap()
+    let jet_control_points = control_points
+        .into_iter()
+        .map(|p| Jet::new(p, NoInfinitesimal))
+        .collect();
+    let bspline = BSpline::<f32>::new(degree, knots).unwrap();
+    BSplineCurve::new(dim, bspline, jet_control_points).unwrap()
 }
 
-pub fn bspline_example_0_b() -> BSplineCurve<f32, NoInfinitesimal> {
-    let degree = 0;
-    let knots = vec![1.0, 2.0, 3.0];
-    let dim = Dim(0);
-    let control_points = [2.0, 3.0, 1.0]
-        .map(|p: f32| Jet::new(p, NoInfinitesimal))
-        .to_vec();
-
-    let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-    BSplineCurve::new(dim, bspline, control_points.clone()).unwrap()
+fn bspline_example_0_a() -> BSplineCurve<f32, NoInfinitesimal> {
+    create_bspline_example(0, vec![1.0], vec![2.0])
 }
 
-pub fn bspline_example_1_a() -> BSplineCurve<f32, NoInfinitesimal> {
-    let degree = 1;
-    let knots = vec![1.0, 2.0];
-    let dim = Dim(0);
-    let control_points = [1.0, 3.0]
-        .map(|p: f32| Jet::new(p, NoInfinitesimal))
-        .to_vec();
-
-    let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-    BSplineCurve::new(dim, bspline, control_points.clone()).unwrap()
+fn bspline_example_0_b() -> BSplineCurve<f32, NoInfinitesimal> {
+    create_bspline_example(0, vec![1.0, 2.0, 3.0], vec![2.0, 3.0, 1.0])
 }
 
-pub fn bspline_example_1_b() -> BSplineCurve<f32, NoInfinitesimal> {
-    let degree = 1;
-    let knots = vec![1.0, 2.0, 3.0, 4.0];
-    let dim = Dim(0);
-    let control_points = [1.0, 3.0, 2.0, 5.0]
-        .map(|p: f32| Jet::new(p, NoInfinitesimal))
-        .to_vec();
-
-    let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-    BSplineCurve::new(dim, bspline, control_points.clone()).unwrap()
+fn bspline_example_1_a() -> BSplineCurve<f32, NoInfinitesimal> {
+    create_bspline_example(1, vec![1.0, 2.0], vec![1.0, 3.0])
 }
 
-pub fn bspline_example_2_a() -> BSplineCurve<f32, NoInfinitesimal> {
-    let degree = 2;
-    let knots = vec![1.0, 2.0, 3.0];
-    let dim = Dim(0);
-    let control_points = [1.0, 3.0, 2.0, 4.0]
-        .map(|p: f32| Jet::new(p, NoInfinitesimal))
-        .to_vec();
-
-    let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-    BSplineCurve::new(dim, bspline, control_points.clone()).unwrap()
+fn bspline_example_1_b() -> BSplineCurve<f32, NoInfinitesimal> {
+    create_bspline_example(1, vec![1.0, 2.0, 3.0, 4.0], vec![1.0, 3.0, 2.0, 5.0])
 }
 
-pub fn bspline_example_2_b() -> BSplineCurve<f32, NoInfinitesimal> {
-    let degree = 2;
-    let knots = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-    let dim = Dim(0);
-    let control_points = [1.0, 3.0, 2.0, 4.0, 1.0, 5.0]
-        .map(|p: f32| Jet::new(p, NoInfinitesimal))
-        .to_vec();
-
-    let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-    BSplineCurve::new(dim, bspline, control_points.clone()).unwrap()
+fn bspline_example_2_a() -> BSplineCurve<f32, NoInfinitesimal> {
+    create_bspline_example(2, vec![1.0, 2.0, 3.0], vec![1.0, 3.0, 2.0, 4.0])
 }
 
-pub fn bspline_example_3_a() -> BSplineCurve<f32, NoInfinitesimal> {
-    let degree = 3;
-    let knots = vec![1.0, 2.0, 3.0, 4.0];
-    let dim = Dim(0);
-    let control_points = [1.0, 3.0, 2.0, 4.0, 1.0, 5.0]
-        .map(|p: f32| Jet::new(p, NoInfinitesimal))
-        .to_vec();
-
-    let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-    BSplineCurve::new(dim, bspline, control_points).unwrap()
+fn bspline_example_2_b() -> BSplineCurve<f32, NoInfinitesimal> {
+    create_bspline_example(
+        2,
+        vec![1.0, 2.0, 3.0, 4.0, 5.0],
+        vec![1.0, 3.0, 2.0, 4.0, 1.0, 5.0],
+    )
 }
 
-pub fn bspline_example_3_b() -> BSplineCurve<f32, NoInfinitesimal> {
-    let degree = 3;
-    let knots = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
-    let dim = Dim(0);
-    let control_points = [1.0, 3.0, 2.0, 4.0, 1.0, 5.0, 2.0, 3.0]
-        .map(|p: f32| Jet::new(p, NoInfinitesimal))
-        .to_vec();
+fn bspline_example_3_a() -> BSplineCurve<f32, NoInfinitesimal> {
+    create_bspline_example(
+        3,
+        vec![1.0, 2.0, 3.0, 4.0],
+        vec![1.0, 3.0, 2.0, 4.0, 1.0, 5.0],
+    )
+}
 
-    let bspline = BSpline::<f32>::new(degree, knots.clone()).unwrap();
-    BSplineCurve::new(dim, bspline, control_points).unwrap()
+fn bspline_example_3_b() -> BSplineCurve<f32, NoInfinitesimal> {
+    create_bspline_example(
+        3,
+        vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+        vec![1.0, 3.0, 2.0, 4.0, 1.0, 5.0, 2.0, 3.0],
+    )
 }
