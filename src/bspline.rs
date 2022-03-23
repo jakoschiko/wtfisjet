@@ -177,6 +177,12 @@ impl<N: Number, I: Infinitesimal<N>> BSplineCurveBuffer<N, I> {
     }
 }
 
+impl<N: Number, I: Infinitesimal<N>> Default for BSplineCurveBuffer<N, I> {
+    fn default() -> Self {
+        Self::new(0)
+    }
+}
+
 /// Error that occurred during [`BSplineCurve`] construction because a wrong number of
 /// control points was used.
 #[derive(Debug, Clone)]
