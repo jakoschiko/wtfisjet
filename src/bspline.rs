@@ -7,7 +7,7 @@
 
 use std::{cmp::Ordering, fmt::Display, iter::repeat};
 
-use crate::{Dim, Infinitesimal, Jet, Number};
+use crate::{Dim, Infinitesimal, Jet, NoInfinitesimal, Number};
 
 /// Error that occurred during [`BSpline`] construction.
 #[derive(Debug, Clone)]
@@ -276,6 +276,24 @@ impl<N: Number, I: Infinitesimal<N>> BSplineCurve<N, I> {
             bspline: &self.bspline,
             control_points: &self.control_points,
         }
+    }
+}
+
+impl<N: Number> BSplineCurve<N, NoInfinitesimal> {
+    /// Tries to create a B-spline curve using control points without an infinitesimal part.
+    ///
+    /// The number of control points must match the number returned by
+    /// [`BSpline::necessary_control_point_count`].
+    pub fn without_infinitesimal(
+        bspline: BSpline<N>,
+        real_control_points: Vec<N>,
+    ) -> Result<Self, BSplineCurveError<N, NoInfinitesimal>> {
+        let control_points = real_control_points
+            .into_iter()
+            .map(|p| Jet::new(p, NoInfinitesimal))
+            .collect::<Vec<_>>();
+
+        Self::new(Dim(0), bspline, control_points)
     }
 }
 
