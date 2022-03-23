@@ -31,13 +31,13 @@ fn main() {
 
 fn plot_curve(title_name: &str, file_name: &str, curve: BSplineCurve<f32, NoInfinitesimal>) {
     // Create the plot
-    let knots_data = curve
+    let knots_points = curve
         .bspline()
         .knots()
         .iter()
         .map(|&k| [k as f64, 0.0 as f64])
         .collect::<Vec<_>>();
-    let knots_plot = poloto::build::scatter("knot", knots_data);
+    let knots_plot = poloto::build::scatter("knot", knots_points);
 
     let mut buffer = BSplineCurveBuffer::new(curve.bspline().degree());
     let range = {
@@ -53,45 +53,42 @@ fn plot_curve(title_name: &str, file_name: &str, curve: BSplineCurve<f32, NoInfi
         .clone()
         .map(|x| [x as f64, curve.value(&x, &mut buffer).real as f64])
         .collect::<Vec<_>>();
-    let curve_values_plot = poloto::build::line("curve", curve_points);
+    let curve_plot = poloto::build::line("curve", curve_points);
 
     let derivative_1_points = range
         .clone()
         .map(|x| [x as f64, curve.derivative(1, &x, &mut buffer).real as f64])
         .collect::<Vec<_>>();
-    let derivative_1_values_plot = poloto::build::line("derivative 1", derivative_1_points);
+    let derivative_1_plot = poloto::build::line("derivative 1", derivative_1_points);
 
     let derivative_2_points = range
         .clone()
         .map(|x| [x as f64, curve.derivative(2, &x, &mut buffer).real as f64])
         .collect::<Vec<_>>();
-    let derivative_2_values_plot = poloto::build::line("derivative 2", derivative_2_points);
+    let derivative_2_plot = poloto::build::line("derivative 2", derivative_2_points);
 
     let derivative_3_points = range
         .clone()
         .map(|x| [x as f64, curve.derivative(3, &x, &mut buffer).real as f64])
         .collect::<Vec<_>>();
-    let derivative_3_values_plot = poloto::build::line("derivative 3", derivative_3_points);
+    let derivative_3_plot = poloto::build::line("derivative 3", derivative_3_points);
 
     let derivative_4_points = range
         .clone()
         .map(|x| [x as f64, curve.derivative(4, &x, &mut buffer).real as f64])
         .collect::<Vec<_>>();
-    let derivative_4_values_plot = poloto::build::line("derivative 4", derivative_4_points);
+    let derivative_4_plot = poloto::build::line("derivative 4", derivative_4_points);
 
     let plots = plots!(
         knots_plot,
-        curve_values_plot,
-        derivative_1_values_plot,
-        derivative_2_values_plot,
-        derivative_3_values_plot,
-        derivative_4_values_plot
+        curve_plot,
+        derivative_1_plot,
+        derivative_2_plot,
+        derivative_3_plot,
+        derivative_4_plot
     );
 
-    let canvas = poloto::render::canvas();
-    let plotter = canvas
-        .build_with(plots, [], [0.0])
-        .plot(title_name, "x", "y");
+    let plotter = simple_fmt!(plots, title_name, "x", "y");
 
     // Write the plot to a file
     let folder = Path::new("plots");
@@ -101,7 +98,7 @@ fn plot_curve(title_name: &str, file_name: &str, curve: BSplineCurve<f32, NoInfi
 
     let mut file = File::create(file).expect("Failed to create the file for plot");
 
-    write!(file, "{}", poloto::disp(|a| plotter.simple_theme(a)))
+    write!(file, "{}", poloto::disp(|f| plotter.simple_theme(f)))
         .expect("Failed to create write the plot");
 }
 
