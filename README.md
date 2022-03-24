@@ -13,10 +13,10 @@ This crate uses some nightly features. Hence it's necessary to use the nightly r
 Hopefully this won't be necessary anymore in the future.
 
 Nightly features used by this crate:
-- `generic_associated_types` is used for the inner [`Iterator`] types of [`Infinitesimal`].
+- `generic_associated_types` is used for the inner `Iterator` types of `Infinitesimal`.
 We can expect the stabilization in the near future, see [The push for GATs stabilization].
-- `total_cmp` allows us to use function like [`slice::binary_search_by`] for [`f32`] and
-[`f64`]. Although it's handy, this could also be solved with workarounds. See the
+- `total_cmp` allows us to use function like `slice::binary_search_by` for `f32` and
+`f64`. Although it's handy, this could also be solved with workarounds. See the
 [tracking issue for `total_cmp`].
 
 [The push for GATs stabilization]: https://blog.rust-lang.org/2021/08/03/GATs-stabilization-push.html
@@ -45,14 +45,14 @@ has a good explanation of how all of this works.
 [dual numbers]: https://en.wikipedia.org/wiki/Dual_number
 [ceres library]: http://ceres-solver.org/automatic_derivatives.html#dual-numbers-jets
 
-This library implements jet with the struct [`Jet`]. The most important thing you need to know
-about [`Jet`] is that it consists of two parts:
+This library implements jet with the struct `Jet`. The most important thing you need to know
+about `Jet` is that it consists of two parts:
 - The real part is the actual result.
 - The infinitesimal part is the magic part that calculates the derivatives. It's represented
-by the trait [`Infinitesimal`]. This crate provides different implementations with different
+by the trait `Infinitesimal`. This crate provides different implementations with different
 performance characteristics.
 
-So, how can you use [`Jet`]? Instead of writing this:
+So, how can you use `Jet`? Instead of writing this:
 
 ```rust
 fn foo(x: f32) -> f32 {
@@ -115,7 +115,7 @@ println!("{}", result);
 //         result of bar
 ```
 
-Please note that functions `foo` and `bar` in the previous examples don't hide [`Jet`]
+Please note that functions `foo` and `bar` in the previous examples don't hide `Jet`
 behind a type parameter. Of course you could do this:
 
 ```rust
@@ -133,14 +133,14 @@ let dim = Dim(1);
 let result = baz(MyJet::variable(2.0, 0, dim));
 ```
 
-However, this is not recommended. [`Jet`] has many pitfalls and it's helpful to see
+However, this is not recommended. `Jet` has many pitfalls and it's helpful to see
 that your calculation is dealing with jets and not ordinary numbers. Additionally you can
 often improve the performance by using special functions that reduce the number of
-necessary [`Infinitesimal`] operations (e.g. you can use `x.square()` instead of
+necessary `Infinitesimal` operations (e.g. you can use `x.square()` instead of
 `x.clone() * x`).
 
-If you're not interested in the derivatives but want to use a [`Jet`] based function,
-you can use [`NoInfinitesimal`]:
+If you're not interested in the derivatives but want to use a `Jet` based function,
+you can use `NoInfinitesimal`:
 
 ```rust
 use wtfisjet::{Dim, Infinitesimal, Jet, NoInfinitesimal};
@@ -186,7 +186,7 @@ These feature flags can be used to customize the crate.
 
 ### `big-rational-number` (enabled by default)
 
-If enabled, the type `num-rational::BigRational` will implement [`Number`].
+If enabled, the type `num-rational::BigRational` will implement `Number`.
 This is very useful for writing tests with arbitrary precision. It will
 require the dependency `num-rational`.
 
