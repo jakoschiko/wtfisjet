@@ -1,9 +1,11 @@
-//! Provides an implementation for B-splines that uses jets as control points.
+//! Provides an implementation for [B-splines] that uses jets as control points.
 //!
-//! Finding control points that fulfill the required properties is a non-trivial task.
+//! Finding control points that adheres some constraints is a non-trivial task.
 //! One approach is to use a numeric solver to approximate the solution. With jets we
 //! can calculate the derivatives with respect to the control points. This allows us to
-//! use very efficient numeric solvers (e.g. Newton's method).
+//! use very efficient numeric solvers (e.g. [`NewtonsMethod`](crate::newton::NewtonsMethod)).
+//!
+//! [B-splines]: https://en.wikipedia.org/wiki/B-spline
 
 use std::{cmp::Ordering, fmt::Display, iter::repeat};
 

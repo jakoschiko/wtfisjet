@@ -1,6 +1,6 @@
 # wtfisjet
 
-Provides an implementation for jets and some utilities.
+Provides an implementation for jet and some jet-based utilities.
 
 ## Status of this crate
 
@@ -29,7 +29,8 @@ These features are available:
 - Implementation for jets that can be used for AD.
 - Multiple implementation for the infinitesimal part of the jet with different performance
 characteristics.
-- Implementation for B-splines that uses jets as control points
+- Implementation for B-splines that uses jets as control points.
+- Implementation for Newton's method that uses jets for calculating the derivative.
 - Many feature flags that allows to include only the features you need.
 
 ## WTF is jet?
@@ -159,6 +160,26 @@ println!("{}", result);
 Assuming that Rust's zero-overhead principle is not a lie, this will be as fast as using
 a `f32` based function.
 
+## Example: Curve fitting
+
+What is [curve fitting]? Imagine you have a tool that takes some variables and produce a curve.
+You want to produce a curve that adheres some constraints. How do you choose the variables?
+Curve fitting is the process of finding those variables.
+
+This library provides utilities for simple curve fitting:
+- You can use B-splines as a tool for constructing curves. The variables are the control points
+of the B-spline. The constraints are points that should be matched by the B-spline curve.
+- You can use Newton's method to approximate a solution for the variables.
+- You can use jets to calculate the derivative that is necessary for Newton's method.
+
+The example [curve_fitting.rs] shows how this works. It produces the following curve:
+
+![curve fitting result]
+
+[curve fitting]: https://en.wikipedia.org/wiki/Curve_fitting
+[curve_fitting.rs]: https://github.com/jakoschiko/wtfisjet/blob/master/examples/curve_fitting.rs
+[curve fitting result]: https://raw.githubusercontent.com/jakoschiko/wtfisjet/master/plots/curve_fitting.svg
+
 ## Feature flags
 
 These feature flags can be used to customize the crate.
@@ -182,6 +203,11 @@ require the dependency `array-init`.
 ### `b-spline` (enabled by default)
 
 If enabled, the module `wtfisjet::bspline` is available.
+
+### `newton` (enabled by default)
+
+If enabled, the module `wtfisjet::newton` is available. It will require the dependency
+`rulinalg`.
 
 ### `dice` (disabled by default)
 

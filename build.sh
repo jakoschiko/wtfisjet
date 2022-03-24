@@ -19,6 +19,9 @@ cargo +nightly test -- --format=terse
 echo "STEP wtfisjet: cargo run --example bspline_examples"
 cargo run --example bspline_examples
 
+echo "STEP wtfisjet: cargo run --example curve_fitting"
+cargo run --example curve_fitting
+
 echo "STEP wtfisjet: cargo +nightly clippy"
 cargo +nightly clippy
 
