@@ -1,3 +1,5 @@
+// This example demonstrates how jets can be used for curve fitting.
+
 use std::iter::repeat;
 use std::path::Path;
 use std::{fs::File, io::Write};
