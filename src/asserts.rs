@@ -8,7 +8,7 @@ use dicetest::prelude::*;
 
 use crate::{Dim, Infinitesimal, Number};
 
-/// Asserts that the given implementation of [`Infinitesimal`] fulfills all requires properties.
+/// Asserts that the given implementation of [`Infinitesimal`] fulfills all required properties.
 pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
     dicetest: Dicetest,
     dim_die: DD,
@@ -28,7 +28,7 @@ pub fn assert_valid_infinitesimal_impl<N, I, DD, DN>(
         let infinitesimal = fate.roll(&infinitesimal_die);
 
         // We assume that `I::dim` and `I::elem` are correctly implemented. The test expectations
-        // for all other functions are based on these two functions.
+        // of all other functions are based on these two functions.
 
         {
             hint_section!("Is `I::zeros` lawful?");
