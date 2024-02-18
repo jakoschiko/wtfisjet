@@ -238,7 +238,7 @@ fn any_infinitesimal<N: Number, I: Infinitesimal<N>, NDI: Die<N>>(
     })
 }
 
-pub fn prop_left_distributive<N, I>(i_var: Vars<I, 1>, n_vars: Vars<N, 2>)
+fn prop_left_distributive<N, I>(i_var: Vars<I, 1>, n_vars: Vars<N, 2>)
 where
     N: Number + PartialEq,
     I: Infinitesimal<N> + Debug,
