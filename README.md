@@ -147,7 +147,7 @@ a `f32` based function.
 
 ## Example: Curve fitting
 
-What is [curve fitting]? Imagine you have a tool that takes some variables and produce a curve.
+What is [curve fitting]? Imagine you have a tool that takes some variables and produces a curve.
 You want to produce a curve that adheres some constraints. How do you choose the variables?
 Curve fitting is the process of finding those variables.
 
